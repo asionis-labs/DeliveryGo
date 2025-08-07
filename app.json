@@ -5,7 +5,9 @@
     "version": "1.0.0",
     "extra": {
       "supabaseUrl": "https://qcaxwxoxkdgnhjyfzsqy.supabase.co",
-      "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjYXh3eG94a2RnbmhqeWZ6c3F5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0MDE3MzQsImV4cCI6MjA2OTk3NzczNH0.MVGR1bSyDwWLhQkM_nr-mf-lvvsmQcyrQmiqcfJ94y8"
+      "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjYXh3eG94a2RnbmhqeWZ6c3F5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0MDE3MzQsImV4cCI6MjA2OTk3NzczNH0.MVGR1bSyDwWLhQkM_nr-mf-lvvsmQcyrQmiqcfJ94y8",
+      "gemini_api": "AIzaSyCzWCKM28gogeYktmg4f0heGVK7zvPru2w",
+      "google_api": "AIzaSyCLMZpfrz6UTS7nppae1NCR-B1iwz-HusA"
     },
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -36,6 +38,12 @@
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "The app accesses your photos to let you share them with your friends."
         }
       ]
     ],

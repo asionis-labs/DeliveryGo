@@ -12,6 +12,7 @@ export type UIButtonProps = {
      textStyle?: TextStyle;
      icon?: ReactNode;
      iconPosition?: 'left' | 'right';
+     disabled?: boolean;
 };
 
 export const UIButton = ({ label, onPress, type = 'normal', style, textStyle, icon, iconPosition = 'left', ...rest }: UIButtonProps) => {

@@ -1,53 +1,73 @@
-import {StyleSheet, View, Text, SafeAreaView, Alert} from 'react-native';
-import {useEffect, useState} from "react";
-import {supabase} from "@/lib/supabase";
-import {useColors} from "@/hooks/useColors";
+import { StyleSheet, View, Text, SafeAreaView, Alert, Platform } from 'react-native';
+import { supabase } from '@/lib/supabase';
+import { useColors } from '@/hooks/useColors';
 import { useRouter } from 'expo-router';
-import {UIButton} from "@/components/UIButton";
+import { UIButton } from '@/components/UIButton';
+import { dataStore } from '@/store/dataStore';
+import LineBreak from '@/components/LineBreak';
 
 export default function Profile() {
-
-    const [isLoading, setIsLoading] = useState(true);
-    const color = useColors()
+    const color = useColors();
     const router = useRouter();
+
+    const { session, setSession, profile, setProfile } = dataStore()
 
     const handleLogout = async () => {
         try {
             const { error } = await supabase.auth.signOut();
             if (error) throw error;
-            router.replace('/');
         } catch (err) {
-            console.error('Error logging out:', err);
-            Alert.alert('Error', 'Failed to log out.');
+            console.warn('Network issue during logout, proceeding with local sign-out:', err);
+        } finally {
+            dataStore.getState().setSession(null);
+            dataStore.getState().setProfile(null);
+            router.replace('/');
         }
     };
 
-    useEffect(() => {
-
-        const fetchSession = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            console.log('🔍 Session From Profile:', session);
-        };
-
-        fetchSession();
-
-    }, []);
 
     return (
-        <SafeAreaView style={{backgroundColor: color.primary_bg, flex: 1, padding: 50}}>
-            <View>
-                <Text> Hello </Text>
+        <SafeAreaView style={{ backgroundColor: color.primary_bg, flex: 1, padding: 30 }}>
+            <LineBreak height={Platform.OS === "android" ? 25 : 0} />
 
-                <UIButton
-                    label="Logout"
-                    onPress={handleLogout}
-                    type="normal"
-                />
+            <View style={{ marginBottom: 30 }}>
+                <Text style={styles.heading}>Profile</Text>
             </View>
+
+            {profile ? (
+                <View style={styles.infoContainer}>
+                    <Info label="Name" value={profile.name} />
+                    <Info label="Email" value={profile.email} />
+                    <Info label="Phone" value={profile.phone} />
+                    <Info label="Role" value={profile.role} />
+                    <Info label="Address" value={`${profile.house_number}, ${profile.street}`} />
+                    <Info label="Town/Postcode" value={`${profile.town}, ${profile.postcode}`} />
+                    <Info label="Country" value={profile.country} />
+                </View>
+            ) : (
+                <Text>Loading profile...</Text>
+            )}
+
+            <UIButton label="Logout" onPress={handleLogout} type="normal" />
         </SafeAreaView>
     );
 }
 
-const styles = StyleSheet.create({
+function Info({ label, value }: { label: string; value?: string }) {
+    return (
+        <View style={{ marginBottom: 10 }}>
+            <Text style={{ fontWeight: 'bold' }}>{label}:</Text>
+            <Text>{value || 'Not set'}</Text>
+        </View>
+    );
+}
 
+const styles = StyleSheet.create({
+    heading: {
+        fontSize: 26,
+        fontWeight: 'bold',
+    },
+    infoContainer: {
+        marginBottom: 40,
+    },
 });
