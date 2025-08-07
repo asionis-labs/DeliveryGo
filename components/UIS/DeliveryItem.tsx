@@ -12,7 +12,7 @@ export default function DeliveryItem({ item }: { item: any }) {
 
     const [modalVisible, setModalVisible] = useState(false)
 
-    console.log("DeliveryItem data:", item);
+    // console.log("DeliveryItem data:", item);
     const color = useColors()
 
 

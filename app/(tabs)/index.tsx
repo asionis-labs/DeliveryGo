@@ -5,6 +5,7 @@ import DeliveryHeader from "@/components/UIS/DeliveryHeader";
 import DeliveryItem from "@/components/UIS/DeliveryItem";
 import TakePhoto from "@/components/UIS/TakePhoto";
 
+
 export default function HomeScreen() {
 
     const color = useColors();
