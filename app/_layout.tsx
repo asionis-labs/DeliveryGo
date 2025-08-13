@@ -1,3 +1,5 @@
+// app/_layout.tsx
+
 import { useEffect, useState } from 'react';
 import { View, ActivityIndicator, AppState, Platform } from 'react-native';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
@@ -15,18 +17,24 @@ export default function RootLayout() {
     });
 
     const [profileLoading, setProfileLoading] = useState(true);
-    const { session, profile, setSession, setProfile } = dataStore();
+    const { session, setSession, setProfile } = dataStore();
 
     useEffect(() => {
         const fetchAndSetProfile = async (currentSession: any) => {
             if (currentSession?.user?.id) {
-                // ✅ Fetch all profile data including the active connection name
-                const { data } = await supabase
+                // Fetch profile only
+                const { data: profileData, error: profileError } = await supabase
                     .from('profiles')
                     .select('*')
                     .eq('id', currentSession.user.id)
                     .single();
-                setProfile(data || null);
+
+                if (profileError) {
+                    console.error('Failed to fetch profile:', profileError);
+                    setProfile(null);
+                } else {
+                    setProfile(profileData);
+                }
             } else {
                 setProfile(null);
             }
@@ -47,7 +55,7 @@ export default function RootLayout() {
         return () => {
             authListener.subscription.unsubscribe();
         };
-    }, []);
+    }, [setSession, setProfile]);
 
     useEffect(() => {
         if (Platform.OS !== 'web') {
@@ -63,7 +71,7 @@ export default function RootLayout() {
     }, []);
 
     const isAuthenticated = !!session?.user;
-    const hasProfile = !!profile;
+    const hasProfile = !!dataStore().profile;
 
     if (!fontsLoaded || profileLoading) {
         return (

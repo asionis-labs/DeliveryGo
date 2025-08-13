@@ -1,6 +1,7 @@
+// ConnectionScreen.tsx
+
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { View, StyleSheet, ScrollView, Alert, TextInput, ActivityIndicator, TouchableOpacity } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, StyleSheet, SafeAreaView, ScrollView, Alert, TextInput, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { UIText } from '@/components/UIText';
 import { UIButton } from '@/components/UIButton';
 import { useColors } from '@/hooks/useColors';
@@ -62,11 +63,7 @@ export default function ConnectionScreen() {
 
     const { data, error } = await supabase
       .from('connections')
-      .select(`
-        id, driver_id, restaurant_id, status, hourly_rate, mileage_rate, invited_by, created_at,
-        driver_name:profiles!connections_driver_id_fkey(name),
-        restaurant_name:profiles!connections_restaurant_id_fkey(name)
-      `)
+      .select(`*`)
       .or(`driver_id.eq.${profile.id},restaurant_id.eq.${profile.id}`);
 
     if (error) {
@@ -74,13 +71,8 @@ export default function ConnectionScreen() {
       setConnections([]);
       setConnectionsInStore([]);
     } else {
-      const formattedConnections = data.map((conn: any) => ({
-        ...conn,
-        driver_name: conn.driver_name?.name,
-        restaurant_name: conn.restaurant_name?.name
-      }));
-      setConnections(formattedConnections);
-      setConnectionsInStore(formattedConnections);
+      setConnections(data || []);
+      setConnectionsInStore(data || []);
     }
     setLoading(false);
   }, [profile?.id, setConnections, setConnectionsInStore]);
@@ -119,16 +111,53 @@ export default function ConnectionScreen() {
     setLoading(false);
   };
 
+  // ConnectionScreen.tsx
+
   const handleSendRequest = async (recipientId: string) => {
-    if (!profile?.id) return;
+    if (!profile?.id || !profile.name) return;
+
+    const oppositeRole = profile.role === 'driver' ? 'restaurant' : 'driver';
+
+    // Fetch the recipient's profile data
+    const { data: recipientProfile, error: recipientError } = await supabase
+      .from('profiles')
+      .select('name, hourly_rate, mileage_rate, postcode')
+      .eq('id', recipientId)
+      .single();
+
+    if (recipientError || !recipientProfile) {
+      Alert.alert("Error", "Could not find recipient profile name and rates.");
+      return;
+    }
+
     const [driver_id, restaurant_id] = profile.role === 'driver'
       ? [profile.id, recipientId]
       : [recipientId, profile.id];
 
-    const { hourly_rate, mileage_rate, role } = profile;
+    const [driver_name, restaurant_name] = profile.role === 'driver'
+      ? [profile.name, recipientProfile.name]
+      : [recipientProfile.name, profile.name];
+
+    // Rates are taken from the inviting party if they are a restaurant
+    // or the recipient if they are a restaurant
+    const hourly_rate = profile.role === 'restaurant'
+      ? profile.hourly_rate
+      : recipientProfile.hourly_rate;
+
+    const mileage_rate = profile.role === 'restaurant'
+      ? profile.mileage_rate
+      : recipientProfile.mileage_rate;
+
+    const restaurant_postcode = profile.role === 'restaurant'
+      ? profile.postcode
+      : recipientProfile.postcode;
 
     if (hourly_rate === null || mileage_rate === null) {
-      return Alert.alert("Error", "Your profile is missing hourly or mileage rate information. Please update your profile first.");
+      return Alert.alert("Error", "Your profile or the recipient's profile is missing rate information. Please update profiles first.");
+    }
+
+    if (!restaurant_postcode) {
+      return Alert.alert("Error", "The restaurant's postcode is missing from their profile.");
     }
 
     const { error } = await supabase
@@ -136,10 +165,13 @@ export default function ConnectionScreen() {
       .insert({
         driver_id,
         restaurant_id,
+        driver_name,
+        restaurant_name,
         hourly_rate,
         mileage_rate,
-        invited_by: role,
+        invited_by: profile.role,
         status: 'pending',
+        restaurant_postcode, // <-- Now inserting this field
       });
 
     if (error) {

@@ -16,6 +16,7 @@ interface Delivery {
     earning: number;
     status: 'ongoing' | 'completed';
     start_time: string;
+    distance_miles: number;
 }
 
 interface Shift {
@@ -33,12 +34,14 @@ interface Connection {
     mileage_rate: number;
     restaurant_id: string;
     driver_id: string;
+    status: 'accepted' | 'pending' | 'denied';
 }
 
 interface Profile {
     id: string;
     role: 'driver' | 'restaurant';
     hourly_rate: number;
+    mileage_rate: number;
     active_connection_id: string | null;
     active_connection_name: string | null;
     name: string;
@@ -70,7 +73,7 @@ export default function DeliveryHeader({ data, onRefresh }: DeliveryHeaderProps)
         if (profile?.role === 'restaurant') {
             return profile.name;
         }
-        return profile?.active_connection_name || "Self_Driving";
+        return profile?.active_connection_name || "Self-Driving";
     }, [profile]);
 
     useEffect(() => {
@@ -198,7 +201,7 @@ export default function DeliveryHeader({ data, onRefresh }: DeliveryHeaderProps)
         if (newConnectionId === null) {
             updateData = {
                 active_connection_id: null,
-                active_connection_name: "Self_Driving"
+                active_connection_name: "Self-Driving"
             };
         } else {
             const selectedConnection = connections.find(c => c.id === newConnectionId);
@@ -291,23 +294,21 @@ export default function DeliveryHeader({ data, onRefresh }: DeliveryHeaderProps)
                     </View>
                 </View>
                 <UIModal title="Select Connection" isVisible={dropdownVisible} onClose={() => setDropdownVisible(false)}>
-                    {profile?.role === 'driver' && displayedConnections.length > 0 ? (
-                        <>
-                            {displayedConnections.map((conn) => (
-                                <TouchableOpacity
-                                    key={conn.id}
-                                    onPress={() => handleConnectionSelect(conn.id)}
-                                    style={{ paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: color.second_bg }}
-                                >
-                                    <UIText type="base">
-                                        {conn.restaurant_name}
-                                    </UIText>
-                                </TouchableOpacity>
-                            ))}
-                        </>
+                    {profile?.role === 'driver' ? (
+                        displayedConnections.map((conn) => (
+                            <TouchableOpacity
+                                key={conn.id}
+                                onPress={() => handleConnectionSelect(conn.id)}
+                                style={{ paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: color.second_bg }}
+                            >
+                                <UIText type="base" style={{ fontWeight: profile.active_connection_id === conn.id ? 'bold' : 'normal' }}>
+                                    {conn.restaurant_name}
+                                </UIText>
+                            </TouchableOpacity>
+                        ))
                     ) : (
                         <UIText style={{ marginTop: 10 }}>
-                            {profile?.role === 'driver' ? 'No connections available.' : 'Connections cannot be changed.'}
+                            Connections cannot be changed.
                         </UIText>
                     )}
                 </UIModal>

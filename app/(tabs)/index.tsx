@@ -1,3 +1,5 @@
+// app/(tabs)/index.tsx
+
 import { SafeAreaView, StyleSheet, View, StatusBar, FlatList, Alert, ActivityIndicator } from 'react-native';
 import { useColors } from "@/hooks/useColors";
 import DeliveryHeader from "@/components/UIS/DeliveryHeader";
@@ -47,38 +49,30 @@ export default function HomeScreen() {
             startOfDay.setHours(0, 0, 0, 0);
             const today = startOfDay.toISOString();
 
-            // Fetch all connections first for the dropdown menu
+            // Fetch all accepted connections for the current user
             const { data: connectionsData, error: connectionsError } = await supabase
                 .from('connections')
                 .select('*')
                 .or(`driver_id.eq.${profile.id},restaurant_id.eq.${profile.id}`)
                 .eq('status', 'accepted');
 
+            console.log("Fetch Conn Index", connectionsData);
 
             if (connectionsError) {
                 Alert.alert("Error fetching connections", connectionsError.message);
                 setConnections([]);
-                setDeliveries([]);
-                setShifts([]);
-                setLoading(false);
-                return;
+            } else {
+                setConnections(connectionsData || []);
             }
-
-            setConnections(connectionsData || []);
 
             // Conditional fetching based on whether a connection is active
             let deliveriesQuery = supabase.from('deliveries').select('*');
             let shiftsQuery = supabase.from('shifts').select('*');
-            console.log("Active Conn ID OUTside", profile.active_connection_id);
 
             if (profile.active_connection_id) {
-                console.log("Active Conn ID", profile.active_connection_id);
-
-                // Fetch data for the active connection
                 deliveriesQuery = deliveriesQuery.eq('connection_id', profile.active_connection_id);
                 shiftsQuery = shiftsQuery.eq('connection_id', profile.active_connection_id);
             } else {
-                // Fetch data for the "Self_Driving" state
                 if (profile.role === 'driver') {
                     deliveriesQuery = deliveriesQuery.eq('driver_id', profile.id).is('connection_id', null);
                     shiftsQuery = shiftsQuery.eq('driver_id', profile.id).is('connection_id', null);
@@ -88,7 +82,6 @@ export default function HomeScreen() {
                 }
             }
 
-            // Add date filter to both queries
             deliveriesQuery = deliveriesQuery.gte('created_at', today);
             shiftsQuery = shiftsQuery.gte('created_at', today);
 
@@ -133,7 +126,7 @@ export default function HomeScreen() {
                 <FlatList
                     data={sortedDeliveries}
                     keyExtractor={(item) => item.id}
-                    renderItem={({ item }) => <DeliveryItem item={item} onRefresh={triggerRefresh} />}
+                    renderItem={({ item }) => <DeliveryItem item={item} onRefresh={triggerRefresh} />} // <-- Here
                     ListHeaderComponent={() => <DeliveryHeader data={DataObject} onRefresh={triggerRefresh} />}
                     contentContainerStyle={{ paddingBottom: 80 }}
                     extraData={deliveries}

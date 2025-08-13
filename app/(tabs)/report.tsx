@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, ActivityIndicator, ScrollView, Dimensions, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, ActivityIndicator, ScrollView, Dimensions, TouchableOpacity, StyleSheet } from 'react-native';
 import { dataStore } from '@/store/dataStore';
 import { supabase } from '@/lib/supabase';
 import { TabView, TabBar } from 'react-native-tab-view';
@@ -21,6 +21,8 @@ interface Delivery {
     completed_at: string | null;
     created_at: string;
     distance_miles: number;
+    connection_id: string;
+    driver_id: string;
 }
 
 interface Shift {
@@ -29,6 +31,8 @@ interface Shift {
     end_time: string | null;
     status: 'active' | 'ended';
     created_at: string;
+    connection_id: string;
+    driver_id: string;
 }
 
 interface Connection {
@@ -41,9 +45,19 @@ interface Connection {
     driver_id: string;
 }
 
+interface Profile {
+    id: string;
+    role: 'driver' | 'restaurant';
+    hourly_rate: number;
+    mileage_rate: number;
+}
+
 const getReportDataForPeriod = (
     data: { deliveries: Delivery[]; shifts: Shift[] },
-    period: 'today' | 'week' | 'month' | 'year'
+    period: 'today' | 'week' | 'month' | 'year',
+    connections: Connection[],
+    selectedConnectionId: string | 'all',
+    profile: Profile
 ) => {
     const now = new Date();
     let startDate: Date;
@@ -65,49 +79,98 @@ const getReportDataForPeriod = (
             startDate = new Date(0);
     }
 
-    const filteredDeliveries = data.deliveries.filter(d => new Date(d.created_at) >= startDate);
-    const filteredShifts = data.shifts.filter(s => new Date(s.start_time) >= startDate);
+    const hourlyRate = profile.hourly_rate;
 
-    const aggregatedEarnings = filteredDeliveries.reduce((sum, d) => sum + (d.earning || 0), 0);
-    const aggregatedMileage = filteredDeliveries.reduce((sum, d) => sum + (d.distance_miles || 0), 0);
+    // Filter deliveries by period and connection first
+    const periodDeliveries = data.deliveries.filter(d => {
+        const deliveryDate = new Date(d.created_at);
+        const isWithinPeriod = deliveryDate >= startDate;
+        const isForConnection = selectedConnectionId === 'all' || d.connection_id === selectedConnectionId;
+        return isWithinPeriod && isForConnection;
+    });
 
+    // --- FIX: Filter for 'completed' deliveries to use for all calculations ---
+    const completedDeliveries = periodDeliveries.filter(d => d.status === 'completed' && d.completed_at);
+
+    // Calculate total earnings and mileage from COMPLETED deliveries
+    const totalDeliveryEarnings = completedDeliveries.reduce((sum, d) => sum + (d.earning || 0), 0);
+    const totalMileage = completedDeliveries.reduce((sum, d) => sum + (d.distance_miles || 0), 0);
+
+    // Calculate shifts earnings (already correct)
+    const filteredShifts = data.shifts.filter(s => {
+        const shiftStartDate = new Date(s.start_time);
+        const isWithinPeriod = shiftStartDate >= startDate;
+        const isForConnection = selectedConnectionId === 'all' || s.connection_id === selectedConnectionId;
+        return isWithinPeriod && isForConnection;
+    });
+
+    let totalHourlyEarning = 0;
     let totalShiftDurationMinutes = 0;
     filteredShifts.forEach(shift => {
-        if (shift.status === 'ended' && shift.end_time) {
-            const start = new Date(shift.start_time);
-            const end = new Date(shift.end_time);
-            totalShiftDurationMinutes += (end.getTime() - start.getTime()) / (1000 * 60);
-        } else if (shift.status === 'active') {
-            const start = new Date(shift.start_time);
-            totalShiftDurationMinutes += (now.getTime() - start.getTime()) / (1000 * 60);
+        const shiftStart = new Date(shift.start_time);
+        const shiftEnd = shift.status === 'ended' && shift.end_time ? new Date(shift.end_time) : now;
+        const shiftDurationMinutes = (shiftEnd.getTime() - shiftStart.getTime()) / (1000 * 60);
+        totalShiftDurationMinutes += shiftDurationMinutes;
+        totalHourlyEarning += (shiftDurationMinutes / 60) * hourlyRate;
+    });
+
+    const aggregatedEarnings = totalDeliveryEarnings + totalHourlyEarning;
+
+    // Calculate delivery-specific metrics based on completed deliveries
+    let totalDeliveryDurationMinutes = 0;
+    completedDeliveries.forEach(delivery => {
+        const start = new Date(delivery.start_time);
+        const end = new Date(delivery.completed_at!);
+
+        if (end > start) {
+            totalDeliveryDurationMinutes += (end.getTime() - start.getTime()) / (1000 * 60);
         }
     });
 
-    const chartLabels = [...new Set(filteredDeliveries.map(d => new Date(d.created_at).toLocaleDateString()))].sort();
+    const totalDeliveries = completedDeliveries.length;
+    const totalDeliveryHours = totalDeliveryDurationMinutes / 60;
+    const hasValidDeliveryTime = totalDeliveryDurationMinutes > 0;
 
-    const earningsDataPoints = chartLabels.map(label =>
-        filteredDeliveries
-            .filter(d => new Date(d.created_at).toLocaleDateString() === label)
-            .reduce((sum, d) => sum + (d.earning || 0), 0)
-    );
+    const avgDeliveryTimeMinutes = hasValidDeliveryTime ? totalDeliveryDurationMinutes / totalDeliveries : 0;
+    const deliveriesPerHour = hasValidDeliveryTime ? totalDeliveries / totalDeliveryHours : 0;
+    const avgSpeed = hasValidDeliveryTime ? totalMileage / totalDeliveryHours : 0;
+
+    // --- FIX: Chart data points now use only completed deliveries ---
+    const chartLabels = [...new Set(completedDeliveries.map(d => new Date(d.created_at).toLocaleDateString()))].sort();
+
+    const earningsDataPoints = chartLabels.map(label => {
+        const dailyDeliveries = completedDeliveries.filter(d => new Date(d.created_at).toLocaleDateString() === label);
+        const dailyDeliveryEarnings = dailyDeliveries.reduce((sum, d) => sum + (d.earning || 0), 0);
+
+        // Add hourly earnings for the day as well
+        const dailyShifts = filteredShifts.filter(s => new Date(s.start_time).toLocaleDateString() === label);
+        const dailyHourlyEarnings = dailyShifts.reduce((sum, s) => {
+            const shiftStart = new Date(s.start_time);
+            const shiftEnd = s.status === 'ended' && s.end_time ? new Date(s.end_time) : now;
+            const durationMinutes = (shiftEnd.getTime() - shiftStart.getTime()) / (1000 * 60);
+            return sum + (durationMinutes / 60) * hourlyRate;
+        }, 0);
+
+        return dailyDeliveryEarnings + dailyHourlyEarnings;
+    });
 
     const mileageDataPoints = chartLabels.map(label =>
-        filteredDeliveries
+        completedDeliveries
             .filter(d => new Date(d.created_at).toLocaleDateString() === label)
             .reduce((sum, d) => sum + (d.distance_miles || 0), 0)
     );
 
     const combinedChartData = {
-        labels: chartLabels,
+        labels: chartLabels.length > 0 ? chartLabels : ['No Data'],
         datasets: [
             {
-                data: earningsDataPoints,
+                data: earningsDataPoints.length > 0 ? earningsDataPoints : [0],
                 color: (opacity = 1) => `rgba(26, 96, 248, ${opacity})`,
                 strokeWidth: 2,
                 legend: "Earnings"
             },
             {
-                data: mileageDataPoints,
+                data: mileageDataPoints.length > 0 ? mileageDataPoints : [0],
                 color: (opacity = 1) => `rgba(36, 154, 131, ${opacity})`,
                 strokeWidth: 2,
                 legend: "Mileage"
@@ -116,30 +179,17 @@ const getReportDataForPeriod = (
         legend: ["Earnings", "Mileage"]
     };
 
-    const completedDeliveries = filteredDeliveries.filter(d => d.status === 'completed' && d.completed_at);
-    let totalDeliveryDurationMinutes = 0;
-    completedDeliveries.forEach(delivery => {
-        const start = new Date(delivery.start_time);
-        const end = new Date(delivery.completed_at!);
-        totalDeliveryDurationMinutes += (end.getTime() - start.getTime()) / (1000 * 60);
-    });
-
-    const totalDeliveries = completedDeliveries.length;
-    const totalShiftHours = totalShiftDurationMinutes / 60;
-
-    const avgDeliveryTimeMinutes = totalDeliveries > 0 ? totalDeliveryDurationMinutes / totalDeliveries : 0;
-    const deliveriesPerHour = totalShiftHours > 0 ? totalDeliveries / totalShiftHours : 0;
-    const avgSpeed = totalDeliveryDurationMinutes > 0 ? (aggregatedMileage / totalDeliveryDurationMinutes) * 60 : 0;
-
     return {
-        totalEarnings: aggregatedEarnings,
-        totalMileage: aggregatedMileage,
+        totalEarnings: totalDeliveryEarnings,
+        totalMileage,
         totalShiftDurationMinutes,
+        hourlyEarning: totalHourlyEarning,
         combinedChart: combinedChartData,
         avgDeliveryTimeMinutes,
         deliveriesPerHour,
         avgSpeed,
         totalDeliveries,
+        aggregatedEarnings,
     };
 };
 
@@ -197,16 +247,13 @@ const PerformanceChart = ({ score, color }: { score: number; color: any }) => {
     );
 };
 
-const ReportView = ({ data, period }: { data: { deliveries: Delivery[]; shifts: Shift[] }, period: 'today' | 'week' | 'month' | 'year' }) => {
-    const { totalEarnings, totalMileage, totalShiftDurationMinutes, combinedChart, avgDeliveryTimeMinutes, deliveriesPerHour, avgSpeed, totalDeliveries } = useMemo(() => {
-        return getReportDataForPeriod(data, period);
-    }, [data, period]);
+const ReportView = ({ data, period, profile, connections, selectedConnectionId }: { data: { deliveries: Delivery[]; shifts: Shift[] }, period: 'today' | 'week' | 'month' | 'year', profile: Profile, connections: Connection[], selectedConnectionId: string | 'all' }) => {
+    const { aggregatedEarnings, totalEarnings, totalMileage, totalShiftDurationMinutes, hourlyEarning, combinedChart, avgDeliveryTimeMinutes, deliveriesPerHour, avgSpeed, totalDeliveries } = useMemo(() => {
+        return getReportDataForPeriod(data, period, connections, selectedConnectionId, profile);
+    }, [data, period, connections, selectedConnectionId, profile]);
 
     const color = useColors();
-    const hasData = combinedChart.labels.length > 0;
-
-    const actualHourlyEarning = totalShiftDurationMinutes > 0 ? (totalEarnings / totalShiftDurationMinutes) * 60 : 0;
-    const netEarning = totalEarnings;
+    const hasData = combinedChart.labels.length > 0 && combinedChart.labels[0] !== 'No Data';
 
     const goodDeliveriesPerHour = 4;
     const goodAvgDeliveryTime = 15;
@@ -244,7 +291,6 @@ const ReportView = ({ data, period }: { data: { deliveries: Delivery[]; shifts: 
         },
     };
 
-    // Prepare a default chart with zero data for when there are no entries
     const zeroDataChart = {
         labels: ['No Data'],
         datasets: [
@@ -264,59 +310,79 @@ const ReportView = ({ data, period }: { data: { deliveries: Delivery[]; shifts: 
         legend: ["Earnings", "Mileage"]
     };
 
+    const isRestaurant = profile?.role === 'restaurant';
+
     return (
-        <ScrollView contentContainerStyle={{ padding: 10, alignItems: 'center' }}>
-            <View style={{ width: '95%', padding: 15, borderRadius: 10, marginBottom: 20, backgroundColor: color.primary_bg }}>
-                <Text style={{ fontSize: 16, fontWeight: 'bold', marginVertical: 4, color: color.text }}>Total Earnings: <Text style={{ color: color.btn }}>£{totalEarnings.toFixed(2)}</Text></Text>
-                <Text style={{ fontSize: 16, fontWeight: 'bold', marginVertical: 4, color: color.text }}>Total Mileage: <Text style={{ color: color.icon }}>{totalMileage.toFixed(2)} miles</Text></Text>
-                <Text style={{ fontSize: 16, fontWeight: 'bold', marginVertical: 4, color: color.text }}>Net Earnings: <Text style={{ color: color.success }}>£{netEarning.toFixed(2)}</Text></Text>
+        <ScrollView contentContainerStyle={{ padding: 20, alignItems: 'center' }}>
+            <View style={{ width: '100%', padding: 15, borderRadius: 10, marginBottom: 20, backgroundColor: color.white }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
+                    <View style={{ flex: 1, alignItems: 'flex-start' }}>
+                        <UIText type="base" style={{ color: color.text_light }}>{isRestaurant ? "Delivery Payout" : "Delivery Fees"}</UIText>
+                        <UIText type="semiBold" style={{ fontSize: 24, color: color.btn }}>£{totalEarnings.toFixed(2)}</UIText>
+                    </View>
+                    <View style={{ flex: 1, alignItems: 'flex-start' }}>
+                        <UIText type="base" style={{ color: color.text_light }}>Total Miles</UIText>
+                        <UIText type="semiBold" style={{ fontSize: 24, color: color.success }}>{totalMileage.toFixed(2)}</UIText>
+                    </View>
+                </View>
+                <View style={{ width: '100%', height: 1, backgroundColor: color.border, marginVertical: 10 }} />
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                    <View style={{ flex: 1, alignItems: 'flex-start' }}>
+                        <UIText type="base" style={{ color: color.text_light }}>{isRestaurant ? "Hourly Cost" : "Hourly Earning"}</UIText>
+                        <UIText type="semiBold" style={{ fontSize: 24, color: color.success }}>£{hourlyEarning.toFixed(2)}</UIText>
+                    </View>
+                    <View style={{ flex: 1, alignItems: 'flex-start' }}>
+                        <UIText type="base" style={{ color: color.text_light }}>Total Earning</UIText>
+                        <UIText type="semiBold" style={{ fontSize: 24, color: color.btn }}>£{aggregatedEarnings.toFixed(2)}</UIText>
+                    </View>
+                </View>
             </View>
 
-            <Text style={{ fontSize: 18, fontWeight: 'bold', marginVertical: 10, alignSelf: 'flex-start', paddingLeft: 10, color: color.text }}>Performance Metrics</Text>
-            <View style={{ width: '95%', padding: 15, borderRadius: 10, marginBottom: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: color.primary_bg }}>
+            <UIText type="semiBold" style={{ fontSize: 18, marginVertical: 10, alignSelf: 'flex-start', paddingLeft: 10, color: color.text }}>Performance Metrics</UIText>
+            <View style={{ width: '100%', padding: 15, borderRadius: 10, marginBottom: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: color.white }}>
                 <View style={{ flex: 1.2, alignItems: 'center', justifyContent: 'center' }}>
                     <PerformanceChart score={finalEfficiencyScore} color={color} />
                     <View style={{ marginTop: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                         <View style={{ alignItems: 'center', justifyContent: 'center', flex: 1, paddingHorizontal: 5 }}>
-                            <Text style={{ fontSize: 16, fontWeight: 'bold', color: color.text }}>£{actualHourlyEarning.toFixed(2)}</Text>
-                            <Text style={{ fontSize: 10, marginTop: 2, color: color.text_light }}>Hourly Earning</Text>
+                            <UIText type="semiBold" style={{ fontSize: 16 }}>£{hourlyEarning.toFixed(2)}</UIText>
+                            <UIText type="base" style={{ fontSize: 10, marginTop: 2, color: color.text_light }}>Hourly Earning</UIText>
                         </View>
                         <View style={{ height: '80%', width: 1, backgroundColor: '#ccc' }} />
                         <View style={{ alignItems: 'center', justifyContent: 'center', flex: 1, paddingHorizontal: 5 }}>
-                            <Text style={{ fontSize: 16, fontWeight: 'bold', color: color.text }}>{totalDeliveries}</Text>
-                            <Text style={{ fontSize: 10, marginTop: 2, color: color.text_light }}>Deliveries</Text>
+                            <UIText type="semiBold" style={{ fontSize: 16 }}>{totalDeliveries}</UIText>
+                            <UIText type="base" style={{ fontSize: 10, marginTop: 2, color: color.text_light }}>Deliveries</UIText>
                         </View>
                     </View>
                 </View>
 
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'flex-end' }}>
                     <View style={{ alignItems: 'flex-end', marginBottom: 8 }}>
-                        <Text style={{ fontSize: 16, fontWeight: 'bold', color: color.text }}>{avgDeliveryTimeMinutes.toFixed(0)} min</Text>
-                        <Text style={{ fontSize: 10, marginTop: 2, color: color.text_light }}>Avg. Delivery Time</Text>
+                        <UIText type="semiBold" style={{ fontSize: 16 }}>{avgDeliveryTimeMinutes.toFixed(0)} min</UIText>
+                        <UIText type="base" style={{ fontSize: 10, marginTop: 2, color: color.text_light }}>Avg. Delivery Time</UIText>
                     </View>
                     <View style={{ width: '80%', height: 1, marginVertical: 8, backgroundColor: color.border }} />
                     <View style={{ alignItems: 'flex-end', marginBottom: 8 }}>
-                        <Text style={{ fontSize: 16, fontWeight: 'bold', color: color.text }}>{deliveriesPerHour.toFixed(1)}</Text>
-                        <Text style={{ fontSize: 10, marginTop: 2, color: color.text_light }}>Deliveries per Hour</Text>
+                        <UIText type="semiBold" style={{ fontSize: 16 }}>{deliveriesPerHour.toFixed(1)}</UIText>
+                        <UIText type="base" style={{ fontSize: 10, marginTop: 2, color: color.text_light }}>Deliveries per Hour</UIText>
                     </View>
                     <View style={{ width: '80%', height: 1, marginVertical: 8, backgroundColor: color.border }} />
                     <View style={{ alignItems: 'flex-end', marginBottom: 8 }}>
-                        <Text style={{ fontSize: 16, fontWeight: 'bold', color: color.text }}>{avgSpeed.toFixed(1)} mph</Text>
-                        <Text style={{ fontSize: 10, marginTop: 2, color: color.text_light }}>Avg. Speed</Text>
+                        <UIText type="semiBold" style={{ fontSize: 16 }}>{avgSpeed.toFixed(1)} mph</UIText>
+                        <UIText type="base" style={{ fontSize: 10, marginTop: 2, color: color.text_light }}>Avg. Speed</UIText>
                     </View>
                 </View>
             </View>
 
-            <Text style={{ fontSize: 18, fontWeight: 'bold', marginVertical: 10, color: color.text }}>Performance Over Time</Text>
-            {/* Conditional rendering for the chart */}
+            <UIText type="semiBold" style={{ fontSize: 18, marginVertical: 10, color: color.text, alignSelf: 'flex-start', paddingLeft: 10 }}>Performance Over Time</UIText>
+
             <LineChart
                 data={hasData ? combinedChart : zeroDataChart}
-                width={screenWidth - 20}
+                width={screenWidth - 40}
                 height={220}
                 chartConfig={{
                     ...chartConfig,
-                    backgroundGradientFrom: color.primary_bg,
-                    backgroundGradientTo: color.primary_bg,
+                    backgroundGradientFrom: color.border,
+                    backgroundGradientTo: color.placeholder,
                     color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
                     labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
                 }}
@@ -325,10 +391,13 @@ const ReportView = ({ data, period }: { data: { deliveries: Delivery[]; shifts: 
                 withInnerLines={false}
                 withOuterLines={false}
             />
-            {!hasData && (
-                <Text style={{ textAlign: 'center', position: 'absolute', top: 580, color: color.text_light }}>No data available for this period.</Text>
-            )}
-        </ScrollView>
+
+            {
+                !hasData && (
+                    <UIText type="base" style={{ textAlign: 'center', position: 'absolute', top: 580, color: color.text_light }}>No data available for this period.</UIText>
+                )
+            }
+        </ScrollView >
     );
 };
 
@@ -408,7 +477,14 @@ export default function ReportScreen() {
     }, [profile?.id, selectedConnectionId]);
 
     const renderScene = ({ route }: any) => {
-        return <ReportView data={reportData} period={route.key} />;
+        if (!profile) return null;
+        return <ReportView
+            data={reportData}
+            period={route.key}
+            profile={profile as Profile}
+            connections={connections}
+            selectedConnectionId={selectedConnectionId}
+        />;
     };
 
     const handleConnectionSelect = (id: string) => {
@@ -417,9 +493,9 @@ export default function ReportScreen() {
     };
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: color.white }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 15, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: color.border }}>
-                <Text style={{ fontSize: 24, fontWeight: 'bold', color: color.text }}>Reports</Text>
+        <SafeAreaView style={{ flex: 1, backgroundColor: color.primary_bg }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: color.border, }}>
+                <UIText type="title" style={{ color: color.text }}>Reports</UIText>
                 <TouchableOpacity
                     onPress={() => setDropdownVisible(true)}
                     style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingLeft: 20, paddingTop: 20, paddingBottom: 20 }}
@@ -435,7 +511,7 @@ export default function ReportScreen() {
                 </View>
             ) : error ? (
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                    <Text style={{ fontSize: 16, color: color.error }}>Error loading data: {error}</Text>
+                    <UIText type="base" style={{ fontSize: 16, color: color.error }}>Error loading data: {error}</UIText>
                 </View>
             ) : (
                 <View style={{ flex: 1 }}>
@@ -447,9 +523,13 @@ export default function ReportScreen() {
                         renderTabBar={(props) => (
                             <TabBar
                                 {...props}
-                                indicatorStyle={{ backgroundColor: color.white }}
-                                style={{ backgroundColor: color.btn }}
-                                labelStyle={{ color: color.white, fontWeight: 'bold' }}
+                                indicatorStyle={{ backgroundColor: color.primary_bg }}
+                                style={{ backgroundColor: color.text_light }}
+                                renderLabel={({ route, focused }) => (
+                                    <UIText type="semiBold" style={{ color: focused ? color.text : color.text_light }}>
+                                        {route.title}
+                                    </UIText>
+                                )}
                             />
                         )}
                     />
@@ -477,7 +557,7 @@ export default function ReportScreen() {
                         </TouchableOpacity>
                     ))
                 ) : (
-                    <UIText>No connections available.</UIText>
+                    <UIText type="base">No connections available.</UIText>
                 )}
             </UIModal>
         </SafeAreaView>
