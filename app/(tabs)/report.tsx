@@ -200,8 +200,8 @@ const getReportDataForPeriod = (
 };
 
 const PerformanceChart = ({ score, color }: { score: number; color: any }) => {
-    const size = 120;
-    const strokeWidth = 12;
+    const size = 150;
+    const strokeWidth = 15;
     const radius = (size - strokeWidth) / 2;
     const circumference = radius * 2 * Math.PI;
     const progress = (score / 100) * circumference;
@@ -321,34 +321,34 @@ const ReportView = ({ data, period, profile, connections, selectedConnectionId }
     return (
         <ScrollView contentContainerStyle={{ padding: 20, alignItems: 'center' }}>
             <View style={{ width: '100%', padding: 15, borderRadius: 10, marginBottom: 20, backgroundColor: color.white }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                     <View style={{ flex: 1, alignItems: 'flex-start' }}>
                         <UIText type="base" style={{ color: color.text_light }}>{isRestaurant ? "Delivery Payout" : "Delivery Fees"}</UIText>
-                        <UIText type="semiBold" style={{ fontSize: 24, color: color.btn }}>£{totalEarnings.toFixed(2)}</UIText>
+                        <UIText type="subtitle" style={{ color: color.btn }}>£{totalEarnings.toFixed(2)}</UIText>
                     </View>
                     <View style={{ flex: 1, alignItems: 'flex-start' }}>
                         <UIText type="base" style={{ color: color.text_light }}>Total Miles</UIText>
-                        <UIText type="semiBold" style={{ fontSize: 24, color: color.success }}>{totalMileage.toFixed(2)}</UIText>
+                        <UIText type="subtitle" style={{ fontSize: 24, color: color.success }}>{totalMileage.toFixed(2)}</UIText>
                     </View>
                 </View>
                 <View style={{ width: '100%', height: 1, backgroundColor: color.border, marginVertical: 10 }} />
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 5 }}>
                     <View style={{ flex: 1, alignItems: 'flex-start' }}>
                         <UIText type="base" style={{ color: color.text_light }}>{isRestaurant ? "Hourly Cost" : "Hourly Earning"}</UIText>
-                        <UIText type="semiBold" style={{ fontSize: 24, color: color.success }}>£{hourlyEarning.toFixed(2)}</UIText>
+                        <UIText type="subtitle" style={{ fontSize: 24, color: color.success }}>£{hourlyEarning.toFixed(2)}</UIText>
                     </View>
                     <View style={{ flex: 1, alignItems: 'flex-start' }}>
                         <UIText type="base" style={{ color: color.text_light }}>Total Earning</UIText>
-                        <UIText type="semiBold" style={{ fontSize: 24, color: color.btn }}>£{aggregatedEarnings.toFixed(2)}</UIText>
+                        <UIText type="subtitle" style={{ fontSize: 24, color: color.btn }}>£{aggregatedEarnings.toFixed(2)}</UIText>
                     </View>
                 </View>
             </View>
 
-            <UIText type="semiBold" style={{ fontSize: 18, marginVertical: 10, alignSelf: 'flex-start', paddingLeft: 10, color: color.text }}>Performance Metrics</UIText>
+            <UIText type="subtitle" style={{ fontSize: 18, marginVertical: 10, alignSelf: 'flex-start', paddingLeft: 10, color: color.text }}>Performance Metrics</UIText>
             <View style={{ width: '100%', padding: 15, borderRadius: 10, marginBottom: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: color.white }}>
                 <View style={{ flex: 1.2, alignItems: 'center', justifyContent: 'center' }}>
                     <PerformanceChart score={finalEfficiencyScore} color={color} />
-                    <View style={{ marginTop: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                    {/* <View style={{ marginTop: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                         <View style={{ alignItems: 'center', justifyContent: 'center', flex: 1, paddingHorizontal: 5 }}>
                             <UIText type="semiBold" style={{ fontSize: 16 }}>£{hourlyEarning.toFixed(2)}</UIText>
                             <UIText type="base" style={{ fontSize: 10, marginTop: 2, color: color.text_light }}>Hourly Earning</UIText>
@@ -358,23 +358,23 @@ const ReportView = ({ data, period, profile, connections, selectedConnectionId }
                             <UIText type="semiBold" style={{ fontSize: 16 }}>{totalDeliveries}</UIText>
                             <UIText type="base" style={{ fontSize: 10, marginTop: 2, color: color.text_light }}>Deliveries</UIText>
                         </View>
-                    </View>
+                    </View> */}
                 </View>
 
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'flex-end' }}>
-                    <View style={{ alignItems: 'flex-end', marginBottom: 8 }}>
+                    <View style={{ alignItems: 'flex-end' }}>
                         <UIText type="semiBold" style={{ fontSize: 16 }}>{avgDeliveryTimeMinutes.toFixed(0)} min</UIText>
-                        <UIText type="base" style={{ fontSize: 10, marginTop: 2, color: color.text_light }}>Avg. Delivery Time</UIText>
+                        <UIText type="base" style={{ fontSize: 10, color: color.text_light }}>Avg. Delivery Time</UIText>
                     </View>
-                    <View style={{ width: '80%', height: 1, marginVertical: 8, backgroundColor: color.border }} />
-                    <View style={{ alignItems: 'flex-end', marginBottom: 8 }}>
+                    <View style={{ width: '80%', height: 1, marginVertical: 5, backgroundColor: color.border }} />
+                    <View style={{ alignItems: 'flex-end' }}>
                         <UIText type="semiBold" style={{ fontSize: 16 }}>{deliveriesPerHour.toFixed(1)}</UIText>
-                        <UIText type="base" style={{ fontSize: 10, marginTop: 2, color: color.text_light }}>Deliveries per Hour</UIText>
+                        <UIText type="base" style={{ fontSize: 10, color: color.text_light }}>Deliveries per Hour</UIText>
                     </View>
-                    <View style={{ width: '80%', height: 1, marginVertical: 8, backgroundColor: color.border }} />
-                    <View style={{ alignItems: 'flex-end', marginBottom: 8 }}>
+                    <View style={{ width: '80%', height: 1, marginVertical: 5, backgroundColor: color.border }} />
+                    <View style={{ alignItems: 'flex-end' }}>
                         <UIText type="semiBold" style={{ fontSize: 16 }}>{avgSpeed.toFixed(1)} mph</UIText>
-                        <UIText type="base" style={{ fontSize: 10, marginTop: 2, color: color.text_light }}>Avg. Speed</UIText>
+                        <UIText type="base" style={{ fontSize: 10, color: color.text_light }}>Avg. Speed</UIText>
                     </View>
                 </View>
             </View>
@@ -387,8 +387,8 @@ const ReportView = ({ data, period, profile, connections, selectedConnectionId }
                 height={220}
                 chartConfig={{
                     ...chartConfig,
-                    backgroundGradientFrom: color.border,
-                    backgroundGradientTo: color.placeholder,
+                    backgroundGradientFrom: color.white,
+                    backgroundGradientTo: color.white,
                     color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
                     labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
                 }}
@@ -529,10 +529,12 @@ export default function ReportScreen() {
                         renderTabBar={(props) => (
                             <TabBar
                                 {...props}
-                                indicatorStyle={{ backgroundColor: color.primary_bg }}
-                                style={{ backgroundColor: color.text_light }}
-                                renderLabel={({ route, focused }) => (
-                                    <UIText type="semiBold" style={{ color: focused ? color.text : color.text_light }}>
+                                indicatorStyle={{ backgroundColor: color.btn }}
+                                style={{ backgroundColor: color.border }}
+                                activeColor={color.text}
+                                inactiveColor={color.text_light}
+                                renderLabel={({ route }) => (
+                                    <UIText type="semiBold">
                                         {route.title}
                                     </UIText>
                                 )}
