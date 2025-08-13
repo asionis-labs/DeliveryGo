@@ -53,6 +53,8 @@ export default function ConnectionScreen() {
   const [selectedConnection, setSelectedConnection] = useState<Connection | null>(null);
   const [connectedProfile, setConnectedProfile] = useState<Profile | null>(null);
   const [modalLoading, setModalLoading] = useState(false);
+  const DEFAULT_DRIVER_ID = '2ca629ba-cf8a-4906-9e13-f54524cf20d9';
+  const DEFAULT_RESTAURANT_ID = 'cf61e4f7-082d-4843-96a5-396093049ad1';
 
   const fetchConnections = useCallback(async () => {
     if (!profile?.id) {
@@ -111,22 +113,17 @@ export default function ConnectionScreen() {
     setLoading(false);
   };
 
-  // ConnectionScreen.tsx
-
   const handleSendRequest = async (recipientId: string) => {
     if (!profile?.id || !profile.name) return;
 
-    const oppositeRole = profile.role === 'driver' ? 'restaurant' : 'driver';
-
-    // Fetch the recipient's profile data
     const { data: recipientProfile, error: recipientError } = await supabase
       .from('profiles')
-      .select('name, hourly_rate, mileage_rate, postcode')
+      .select('name')
       .eq('id', recipientId)
       .single();
 
     if (recipientError || !recipientProfile) {
-      Alert.alert("Error", "Could not find recipient profile name and rates.");
+      Alert.alert("Error", "Could not find recipient profile name.");
       return;
     }
 
@@ -138,26 +135,10 @@ export default function ConnectionScreen() {
       ? [profile.name, recipientProfile.name]
       : [recipientProfile.name, profile.name];
 
-    // Rates are taken from the inviting party if they are a restaurant
-    // or the recipient if they are a restaurant
-    const hourly_rate = profile.role === 'restaurant'
-      ? profile.hourly_rate
-      : recipientProfile.hourly_rate;
-
-    const mileage_rate = profile.role === 'restaurant'
-      ? profile.mileage_rate
-      : recipientProfile.mileage_rate;
-
-    const restaurant_postcode = profile.role === 'restaurant'
-      ? profile.postcode
-      : recipientProfile.postcode;
+    const { hourly_rate, mileage_rate, role } = profile;
 
     if (hourly_rate === null || mileage_rate === null) {
-      return Alert.alert("Error", "Your profile or the recipient's profile is missing rate information. Please update profiles first.");
-    }
-
-    if (!restaurant_postcode) {
-      return Alert.alert("Error", "The restaurant's postcode is missing from their profile.");
+      return Alert.alert("Error", "Your profile is missing hourly or mileage rate information. Please update your profile first.");
     }
 
     const { error } = await supabase
@@ -169,9 +150,8 @@ export default function ConnectionScreen() {
         restaurant_name,
         hourly_rate,
         mileage_rate,
-        invited_by: profile.role,
+        invited_by: role,
         status: 'pending',
-        restaurant_postcode, // <-- Now inserting this field
       });
 
     if (error) {
@@ -197,10 +177,24 @@ export default function ConnectionScreen() {
   };
 
   const handleDeleteConnection = async (connId: string) => {
+    const connectionToDelete = connections.find(c => c.id === connId);
+    if (!connectionToDelete) {
+      Alert.alert("Error", "Connection not found.");
+      return;
+    }
+
+    if (
+      connectionToDelete.driver_id === DEFAULT_DRIVER_ID ||
+      connectionToDelete.restaurant_id === DEFAULT_RESTAURANT_ID
+    ) {
+      Alert.alert("Oops!", "You can't disconnect from the default demo profiles.");
+      return;
+    }
+
     if (profile?.active_connection_id === connId) {
       const { data, error } = await supabase
         .from('profiles')
-        .update({ active_connection_id: null, active_connection_name: "Self_Driving" })
+        .update({ active_connection_id: null, active_connection_name: "Select A Connection" })
         .eq('id', profile.id)
         .select()
         .single();

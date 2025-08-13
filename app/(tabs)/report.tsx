@@ -104,14 +104,20 @@ const getReportDataForPeriod = (
         return isWithinPeriod && isForConnection;
     });
 
+
     let totalHourlyEarning = 0;
     let totalShiftDurationMinutes = 0;
+
     filteredShifts.forEach(shift => {
         const shiftStart = new Date(shift.start_time);
         const shiftEnd = shift.status === 'ended' && shift.end_time ? new Date(shift.end_time) : now;
-        const shiftDurationMinutes = (shiftEnd.getTime() - shiftStart.getTime()) / (1000 * 60);
-        totalShiftDurationMinutes += shiftDurationMinutes;
-        totalHourlyEarning += (shiftDurationMinutes / 60) * hourlyRate;
+
+        // This is the correct logic you identified
+        if (shiftEnd > shiftStart) {
+            const shiftDurationMinutes = (shiftEnd.getTime() - shiftStart.getTime()) / (1000 * 60);
+            totalShiftDurationMinutes += shiftDurationMinutes;
+            totalHourlyEarning += (shiftDurationMinutes / 60) * hourlyRate;
+        }
     });
 
     const aggregatedEarnings = totalDeliveryEarnings + totalHourlyEarning;

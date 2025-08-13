@@ -12,11 +12,13 @@ import { supabase } from "@/lib/supabase";
 
 const getDistanceAndAddress = async (origin: string, destination: string, google_api_key: string) => {
     try {
-        const encodedDestination = encodeURIComponent(destination);
-        const url = `https://maps.googleapis.com/maps/api/distancematrix/json?units=imperial&origins=${origin}&destinations=${encodedDestination}&key=${google_api_key}`;
+        // const encodedDestination = encodeURIComponent(destination);
+        const url = `https://maps.googleapis.com/maps/api/distancematrix/json?units=imperial&origins=${origin}&destinations=${destination}&key=${google_api_key}`;
 
         const response = await fetch(url);
         const data = await response.json();
+        console.log("Distance Data", data);
+
 
         if (data.status === "OK" && data.rows[0].elements[0].status === "OK") {
             const distanceInMeters = data.rows[0].elements[0].distance.value;
@@ -236,7 +238,8 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingHorizontal: 20,
-        paddingVertical: 10
+        paddingVertical: 10,
+        borderRadius: 10
     },
     loader: {
         position: 'absolute',

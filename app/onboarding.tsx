@@ -28,6 +28,7 @@ type Connection = {
 
 const DEFAULT_RESTAURANT_ID = "cf61e4f7-082d-4843-96a5-396093049ad1";
 const DEFAULT_DRIVER_ID = "2ca629ba-cf8a-4906-9e13-f54524cf20d9";
+const DEFAULT_RESTAURANT_POSTCODE = "AL10 0JP"
 
 interface FormState {
     name: string;
@@ -38,6 +39,8 @@ interface FormState {
     town: string;
     postcode: string;
     country: string;
+    hourly_rate: number;
+    mileage_rate: number;
 }
 
 export default function OnboardingScreen() {
@@ -56,6 +59,8 @@ export default function OnboardingScreen() {
         town: '',
         postcode: '',
         country: '',
+        hourly_rate: 12.21,
+        mileage_rate: 0.9,
     });
 
     useEffect(() => {
@@ -69,6 +74,8 @@ export default function OnboardingScreen() {
                 town: profile.town || '',
                 postcode: profile.postcode || '',
                 country: profile.country || 'United Kingdom',
+                hourly_rate: profile.hourly_rate || 12.21,
+                mileage_rate: profile.mileage_rate || 0.9
             });
         }
     }, [profile]);
@@ -100,6 +107,9 @@ export default function OnboardingScreen() {
                 town: form.town,
                 postcode: form.postcode,
                 country: form.country,
+                hourly_rate: form.hourly_rate,
+                mileage_rate: form.mileage_rate
+
             }).select().single();
 
             if (profileError) {
@@ -116,8 +126,8 @@ export default function OnboardingScreen() {
                 const { data: connectionData, error: connectionError } = await supabase.from('connections').insert({
                     driver_id: newProfile.id,
                     restaurant_id: DEFAULT_RESTAURANT_ID,
-                    hourly_rate: 12.21,
-                    mileage_rate: 0.5,
+                    hourly_rate: newProfile.hourly_rate,
+                    mileage_rate: newProfile.mileage_rate,
                     invited_by: 'restaurant',
                     status: 'accepted',
                     driver_name: newProfile.name,
@@ -132,38 +142,45 @@ export default function OnboardingScreen() {
                 const { data: connectionData, error: connectionError } = await supabase.from('connections').insert({
                     driver_id: DEFAULT_DRIVER_ID,
                     restaurant_id: newProfile.id,
-                    hourly_rate: 12.21,
-                    mileage_rate: 0.8,
+                    hourly_rate: newProfile.hourly_rate,
+                    mileage_rate: newProfile.mileage_rate,
                     invited_by: 'driver',
                     status: 'accepted',
                     driver_name: 'Demo_Driver',
                     restaurant_name: newProfile.name,
-                    restaurant_postcode: form.postcode // Correctly use form.postcode
+                    restaurant_postcode: DEFAULT_RESTAURANT_POSTCODE // Correctly use form.postcode
 
                 }).select().single();
 
                 if (connectionError) throw connectionError;
+
                 newConnection = connectionData;
             }
 
             // 3. Update the profile with the active connection details using a new API call.
-            const activeConnectionName = newProfile.role === 'driver' ? newConnection.restaurant_name : newConnection.driver_name;
+            if (newConnection) {
+                const activeConnectionName = newProfile.role === 'driver' ? newConnection.restaurant_name : newConnection.driver_name;
 
-            const { data: updatedProfile, error: updateError } = await supabase.from('profiles').update({
-                active_connection_id: newConnection.id,
-                active_connection_name: activeConnectionName,
-            }).eq('id', newProfile.id).select().single();
+                const { data: updatedProfile, error: updateError } = await supabase.from('profiles').update({
+                    active_connection_id: newConnection.id,
+                    active_connection_name: activeConnectionName,
+                }).eq('id', newProfile.id).select().single();
 
-            if (updateError) {
-                Alert.alert('Error', 'Profile created, but failed to set default connection: ' + updateError.message);
-                console.log("Error During Profile Update:", updateError.message);
-                setProfile(newProfile);
+                if (updateError) {
+                    Alert.alert('Error', 'Profile created, but failed to set default connection: ' + updateError.message);
+                    console.log("Error During Profile Update:", updateError.message);
+                    setProfile(newProfile);
+                } else {
+                    Alert.alert('Success', 'Profile and default connection created!');
+                    setProfile(updatedProfile);
+                }
+
+                router.replace('/(tabs)');
             } else {
-                Alert.alert('Success', 'Profile and default connection created!');
-                setProfile(updatedProfile);
+                Alert.alert('Error', 'Profile created but failed to create a default connection.');
+                console.log('Error - Profile created but failed to create a default connection.');
+                setProfile(newProfile);
             }
-
-            router.replace('/(tabs)');
 
         } catch (err: any) {
             console.error("Profile submission failed", err);
@@ -218,6 +235,23 @@ export default function OnboardingScreen() {
                     <UIInput placeholder={form.role === 'restaurant' ? 'Restaurant Name' : 'Full Name'}
                         value={form.name} onChangeText={(v) => handleChange('name', v)} iconName="user-tie" />
                     <UIInput placeholder="Email" value={form.email} onChangeText={(v) => handleChange('email', v)} iconName="mail-bulk" keyboardType="email-address" />
+
+                    <UIInput
+                        placeholder="Hourly Rate"
+                        value={String(form.hourly_rate)}
+                        onChangeText={(v) => handleChange('hourly_rate', v)}
+                        iconName="pound-sign"
+                        keyboardType="numeric"
+                    />
+
+                    {/* New Input for Mileage Rate */}
+                    <UIInput
+                        placeholder="Mileage Rate"
+                        value={String(form.mileage_rate)}
+                        onChangeText={(v) => handleChange('mileage_rate', v)}
+                        iconName="car"
+                        keyboardType="numeric"
+                    />
                     {/* <UIInput placeholder="House Number" value={form.house_number} onChangeText={(v) => handleChange('house_number', v)} iconName="home" /> */}
                     <UIInput placeholder="Street Address" value={form.street} onChangeText={(v) => handleChange('street', v)} iconName="road" />
                     <UIInput placeholder="Town" value={form.town} onChangeText={(v) => handleChange('town', v)} iconName="city" />

@@ -1,5 +1,3 @@
-// app/_layout.tsx
-
 import { useEffect, useState } from 'react';
 import { View, ActivityIndicator, AppState, Platform } from 'react-native';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
@@ -19,21 +17,25 @@ export default function RootLayout() {
     const [profileLoading, setProfileLoading] = useState(true);
     const { session, setSession, setProfile } = dataStore();
 
+
     useEffect(() => {
         const fetchAndSetProfile = async (currentSession: any) => {
             if (currentSession?.user?.id) {
-                // Fetch profile only
+                // Fetch profile without .single() to avoid error on 0 rows
                 const { data: profileData, error: profileError } = await supabase
                     .from('profiles')
                     .select('*')
-                    .eq('id', currentSession.user.id)
-                    .single();
+                    .eq('id', currentSession.user.id); // Removed .single()
 
                 if (profileError) {
                     console.error('Failed to fetch profile:', profileError);
                     setProfile(null);
+                } else if (profileData && profileData.length > 0) {
+                    // Check if data exists before setting the profile
+                    setProfile(profileData[0]); // Access the first (and only) element
                 } else {
-                    setProfile(profileData);
+                    // No profile found, which is expected for new users
+                    setProfile(null);
                 }
             } else {
                 setProfile(null);
