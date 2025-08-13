@@ -1,4 +1,3 @@
-// RootLayout.tsx
 import { useEffect, useState } from 'react';
 import { View, ActivityIndicator, AppState, Platform } from 'react-native';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
@@ -7,7 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useFonts } from 'expo-font';
 import { supabase } from '@/lib/supabase';
-import { dataStore } from '@/store/dataStore'; // ✅ Use the new single store
+import { dataStore } from '@/store/dataStore';
 
 export default function RootLayout() {
     const colorScheme = useColorScheme();
@@ -16,13 +15,12 @@ export default function RootLayout() {
     });
 
     const [profileLoading, setProfileLoading] = useState(true);
+    const { session, profile, setSession, setProfile } = dataStore();
 
-    const { session, profile, setSession, setProfile } = dataStore(); // ✅ Access from dataStore
-
-    // This hook handles all auth state changes and initial profile fetching
     useEffect(() => {
         const fetchAndSetProfile = async (currentSession: any) => {
             if (currentSession?.user?.id) {
+                // ✅ Fetch all profile data including the active connection name
                 const { data } = await supabase
                     .from('profiles')
                     .select('*')

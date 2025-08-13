@@ -4,14 +4,13 @@ import { useColors } from "@/hooks/useColors";
 import { useMemo, useState, useEffect } from "react";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { UIModal } from "@/components/UIModal";
-import LineBreak from "@/components/LineBreak";
 import { UIButton } from "@/components/UIButton";
 import Foundation from '@expo/vector-icons/Foundation';
 import { dataStore } from "@/store/dataStore";
 import { supabase } from "@/lib/supabase";
 
+const LineBreak = ({ height = 10 }: { height?: number }) => <View style={{ height }} />;
 
-// Define interfaces for better type safety
 interface Delivery {
     id: string;
     earning: number;
@@ -33,6 +32,7 @@ interface Connection {
     hourly_rate: number;
     mileage_rate: number;
     restaurant_id: string;
+    driver_id: string;
 }
 
 interface Profile {
@@ -41,6 +41,7 @@ interface Profile {
     hourly_rate: number;
     active_connection_id: string | null;
     active_connection_name: string | null;
+    name: string;
 }
 
 interface HeaderData {
@@ -56,23 +57,26 @@ interface DeliveryHeaderProps {
 }
 
 export default function DeliveryHeader({ data, onRefresh }: DeliveryHeaderProps) {
-
     const [dropdownVisible, setDropdownVisible] = useState(false);
     const [currentTime, setCurrentTime] = useState(new Date());
     const color = useColors();
-    const { setProfile, profile } = dataStore();
+    const { profile, setProfile } = dataStore();
 
     const deliveries = data?.deliveries || [];
     const connections = data?.connections || [];
     const shifts = data?.shifts || [];
 
-    const displayedName = data?.profile?.active_connection_name || "Self_Driving";
+    const displayedName = useMemo(() => {
+        if (profile?.role === 'restaurant') {
+            return profile.name;
+        }
+        return profile?.active_connection_name || "Self_Driving";
+    }, [profile]);
 
     useEffect(() => {
         const interval = setInterval(() => {
             setCurrentTime(new Date());
         }, 60000);
-
         return () => clearInterval(interval);
     }, []);
 
@@ -86,19 +90,16 @@ export default function DeliveryHeader({ data, onRefresh }: DeliveryHeaderProps)
         return shifts.find(s => s.status === 'active');
     }, [shifts]);
 
-    // ✅ Corrected calculation for total shift duration
     const totalShiftDurationAndStart = useMemo(() => {
         let totalMinutes = 0;
         let firstShiftStartTime = '--:--';
 
-        // Find the earliest shift start time for display
         if (shifts.length > 0) {
             const firstShift = shifts.reduce((prev, curr) => (new Date(prev.start_time) < new Date(curr.start_time) ? prev : curr));
             const start = new Date(firstShift.start_time);
             firstShiftStartTime = start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
         }
 
-        // Calculate the duration of each shift
         shifts.forEach(shift => {
             if (shift.status === 'ended' && shift.end_time) {
                 const start = new Date(shift.start_time);
@@ -131,13 +132,26 @@ export default function DeliveryHeader({ data, onRefresh }: DeliveryHeaderProps)
     }, [hourlyEarnings, deliveryEarning]);
 
     const handleShiftToggle = async () => {
-        if (!profile || !profile.active_connection_id) {
-            return Alert.alert("Error", "Please select a connection before starting a shift.");
+        if (!profile) {
+            return Alert.alert("Error", "User profile not loaded.");
         }
 
-        const activeConnection = connections.find(c => c.id === profile.active_connection_id);
-        if (!activeConnection) {
-            return Alert.alert("Error", "Active connection details not found.");
+        let restaurantId: string | null;
+        let connectionId: string | null;
+
+        if (profile.role === 'driver') {
+            if (!profile.active_connection_id) {
+                return Alert.alert("Error", "Please select a connection before starting a shift.");
+            }
+            const activeConnection = connections.find(c => c.id === profile.active_connection_id);
+            if (!activeConnection) {
+                return Alert.alert("Error", "Active connection details not found.");
+            }
+            restaurantId = activeConnection.restaurant_id;
+            connectionId = profile.active_connection_id;
+        } else {
+            restaurantId = profile.id;
+            connectionId = null;
         }
 
         if (activeShift) {
@@ -157,8 +171,8 @@ export default function DeliveryHeader({ data, onRefresh }: DeliveryHeaderProps)
                 .from('shifts')
                 .insert({
                     driver_id: profile.id,
-                    restaurant_id: activeConnection.restaurant_id,
-                    connection_id: profile.active_connection_id,
+                    restaurant_id: restaurantId,
+                    connection_id: connectionId,
                     start_time: new Date().toISOString(),
                     status: 'active'
                 });
@@ -172,23 +186,56 @@ export default function DeliveryHeader({ data, onRefresh }: DeliveryHeaderProps)
         }
     };
 
-    const handleConnectionSelect = async (newConnection: Connection) => {
+    const handleConnectionSelect = async (newConnectionId: string | null) => {
         if (!profile?.id) return;
         setDropdownVisible(false);
 
-        const { error } = await supabase
+        let updateData: {
+            active_connection_id: string | null;
+            active_connection_name: string;
+        };
+
+        if (newConnectionId === null) {
+            updateData = {
+                active_connection_id: null,
+                active_connection_name: "Self_Driving"
+            };
+        } else {
+            const selectedConnection = connections.find(c => c.id === newConnectionId);
+            if (!selectedConnection) return;
+
+            updateData = {
+                active_connection_id: selectedConnection.id,
+                active_connection_name: selectedConnection.restaurant_name
+            };
+        }
+
+        const { data: updatedProfile, error } = await supabase
             .from('profiles')
-            .update({
-                active_connection_id: newConnection.id,
-                active_connection_name: profile.role === 'driver' ? newConnection.restaurant_name : newConnection.driver_name
-            })
-            .eq('id', profile.id);
+            .update(updateData)
+            .eq('id', profile.id)
+            .select()
+            .single();
 
         if (error) {
             Alert.alert("Error", `Failed to switch connection: ${error.message}`);
+        } else {
+            if (updatedProfile) {
+                setProfile(updatedProfile);
+            }
         }
-        onRefresh();
     };
+
+    const displayedConnections = useMemo(() => {
+        if (!connections || !profile) {
+            return [];
+        }
+
+        if (profile.role === 'driver') {
+            return connections.filter(conn => conn.status === 'accepted');
+        }
+        return [];
+    }, [connections, profile]);
 
     return (
         <View style={{ flex: 1, padding: 20 }}>
@@ -196,13 +243,19 @@ export default function DeliveryHeader({ data, onRefresh }: DeliveryHeaderProps)
                 <LineBreak height={Platform.OS === "android" ? 25 : 0} />
                 <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
                     <UIText type="title">Dashboard</UIText>
-                    <TouchableOpacity
-                        onPress={() => setDropdownVisible(true)}
-                        style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingLeft: 20, paddingTop: 20, paddingBottom: 20 }}
-                    >
-                        <UIText type="semiBold"> {displayedName} </UIText>
-                        <FontAwesome name="caret-down" size={16} color={color.text} />
-                    </TouchableOpacity>
+                    {profile?.role === 'driver' ? (
+                        <TouchableOpacity
+                            onPress={() => setDropdownVisible(true)}
+                            style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingLeft: 20, paddingTop: 20, paddingBottom: 20 }}
+                        >
+                            <UIText type="semiBold"> {displayedName} </UIText>
+                            <FontAwesome name="caret-down" size={16} color={color.text} />
+                        </TouchableOpacity>
+                    ) : (
+                        <View style={{ paddingLeft: 20, paddingTop: 20, paddingBottom: 20 }}>
+                            <UIText type="semiBold"> {displayedName} </UIText>
+                        </View>
+                    )}
                 </View>
                 <View style={{
                     backgroundColor: color.white, padding: 20, borderRadius: 15, marginTop: 10,
@@ -221,7 +274,7 @@ export default function DeliveryHeader({ data, onRefresh }: DeliveryHeaderProps)
                     <LineBreak height={20} />
                     <View style={{ flex: 1, flexDirection: "row", justifyContent: "space-between", gap: 20, alignItems: "center" }}>
                         <View style={{ flex: 2 }}>
-                            <UIText>Today&#39;s Earning </UIText>
+                            <UIText>Today's Earning </UIText>
                             <UIText type="subtitle" style={{ marginTop: 5, color: color.btn }}> £{totalEarning.toFixed(2)} </UIText>
                         </View>
                         <UIButton
@@ -238,18 +291,24 @@ export default function DeliveryHeader({ data, onRefresh }: DeliveryHeaderProps)
                     </View>
                 </View>
                 <UIModal title="Select Connection" isVisible={dropdownVisible} onClose={() => setDropdownVisible(false)}>
-                    {connections.length > 0 ? (
-                        connections.map((conn) => (
-                            <TouchableOpacity
-                                key={conn.id}
-                                onPress={() => handleConnectionSelect(conn)}
-                                style={{ paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: color.second_bg }}
-                            >
-                                <UIText type="base">{profile?.role === 'driver' ? conn.restaurant_name : conn.driver_name}</UIText>
-                            </TouchableOpacity>
-                        ))
+                    {profile?.role === 'driver' && displayedConnections.length > 0 ? (
+                        <>
+                            {displayedConnections.map((conn) => (
+                                <TouchableOpacity
+                                    key={conn.id}
+                                    onPress={() => handleConnectionSelect(conn.id)}
+                                    style={{ paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: color.second_bg }}
+                                >
+                                    <UIText type="base">
+                                        {conn.restaurant_name}
+                                    </UIText>
+                                </TouchableOpacity>
+                            ))}
+                        </>
                     ) : (
-                        <UIText>No connections available.</UIText>
+                        <UIText style={{ marginTop: 10 }}>
+                            {profile?.role === 'driver' ? 'No connections available.' : 'Connections cannot be changed.'}
+                        </UIText>
                     )}
                 </UIModal>
             </View>
@@ -259,6 +318,4 @@ export default function DeliveryHeader({ data, onRefresh }: DeliveryHeaderProps)
     );
 }
 
-const styles = StyleSheet.create({
-    container: {},
-});
+const styles = StyleSheet.create({});

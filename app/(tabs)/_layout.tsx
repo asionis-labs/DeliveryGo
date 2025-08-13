@@ -7,6 +7,7 @@ import TabBarBackground from '@/hooks/TabBarBackground';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 export default function TabLayout() {
     const colorScheme = useColorScheme();
@@ -38,7 +39,23 @@ export default function TabLayout() {
                 name="connection"
                 options={{
                     title: "Connection",
-                    tabBarIcon: ({ color }) => <FontAwesome5 name="car" size={24} color={color} />,
+                    tabBarIcon: ({ color }) => <MaterialIcons name="add-link" size={24} color={color} />,
+                }}
+            />
+
+            <Tabs.Screen
+                name="report"
+                options={{
+                    title: "Report",
+                    tabBarIcon: ({ color }) => <FontAwesome5 name="chart-bar" size={24} color={color} />,
+                }}
+            />
+
+            <Tabs.Screen
+                name="profile"
+                options={{
+                    title: "Profile",
+                    tabBarIcon: ({ color }) => <FontAwesome5 name="user" size={24} color={color} />,
                 }}
             />
 

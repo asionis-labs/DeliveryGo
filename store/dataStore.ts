@@ -1,7 +1,7 @@
 
 import { create } from 'zustand';
 
-type Connection = {
+export type Connection = {
     id: string;
     driver_id: string;
     restaurant_id: string;
@@ -15,7 +15,7 @@ type Connection = {
     // ... add other fields
 };
 
-type Shift = {
+export type Shift = {
     id: string;
     driver_id: string;
     restaurant_id: string;
@@ -25,7 +25,7 @@ type Shift = {
     // ... add other fields
 };
 
-type Delivery = {
+export type Delivery = {
     id: string;
     driver_id: string;
     restaurant_id: string;
@@ -44,7 +44,7 @@ type Delivery = {
     // ... add other fields
 };
 
-type UserProfile = {
+export type UserProfile = {
     id: string;
     name: string;
     phone: string;

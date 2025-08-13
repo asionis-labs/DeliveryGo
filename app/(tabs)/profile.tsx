@@ -28,27 +28,31 @@ export default function Profile() {
 
     return (
         <SafeAreaView style={{ backgroundColor: color.primary_bg, flex: 1, padding: 30 }}>
-            <LineBreak height={Platform.OS === "android" ? 25 : 0} />
+            <View style={{ padding: 20 }}>
 
-            <View style={{ marginBottom: 30 }}>
-                <Text style={styles.heading}>Profile</Text>
-            </View>
+                <LineBreak height={Platform.OS === "android" ? 25 : 0} />
 
-            {profile ? (
-                <View style={styles.infoContainer}>
-                    <Info label="Name" value={profile.name} />
-                    <Info label="Email" value={profile.email} />
-                    <Info label="Phone" value={profile.phone} />
-                    <Info label="Role" value={profile.role} />
-                    <Info label="Address" value={`${profile.house_number}, ${profile.street}`} />
-                    <Info label="Town/Postcode" value={`${profile.town}, ${profile.postcode}`} />
-                    <Info label="Country" value={profile.country} />
+                <View style={{ marginBottom: 30 }}>
+                    <Text style={styles.heading}>Profile</Text>
                 </View>
-            ) : (
-                <Text>Loading profile...</Text>
-            )}
 
-            <UIButton label="Logout" onPress={handleLogout} type="normal" />
+                {profile ? (
+                    <View style={styles.infoContainer}>
+                        <Info label="Name" value={profile.name} />
+                        <Info label="Email" value={profile.email} />
+                        <Info label="Phone" value={profile.phone} />
+                        <Info label="Role" value={profile.role} />
+                        <Info label="Address" value={`${profile.house_number}, ${profile.street}`} />
+                        <Info label="Town/Postcode" value={`${profile.town}, ${profile.postcode}`} />
+                        <Info label="Country" value={profile.country} />
+                    </View>
+                ) : (
+                    <Text>Loading profile...</Text>
+                )}
+
+                <UIButton label="Logout" onPress={handleLogout} type="normal" />
+
+            </View>
         </SafeAreaView>
     );
 }
