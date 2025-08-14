@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, ActivityIndicator, ScrollView, RefreshControl, Dimensions, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { SafeAreaView, View, ActivityIndicator, ScrollView, RefreshControl, Dimensions, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { dataStore } from '@/store/dataStore';
 import { supabase } from '@/lib/supabase';
 import { TabView, TabBar } from 'react-native-tab-view';
 import { LineChart } from 'react-native-chart-kit';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { UIModal } from '@/components/UIModal';
 import { UIText } from '@/components/UIText';
