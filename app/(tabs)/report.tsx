@@ -93,8 +93,9 @@ const getReportDataForPeriod = (
     const completedDeliveries = periodDeliveries.filter(d => d.status === 'completed' && d.completed_at);
 
     // Calculate total earnings and mileage from COMPLETED deliveries
-    const totalDeliveryEarnings = completedDeliveries.reduce((sum, d) => sum + (d.earning || 0), 0);
-    const totalMileage = completedDeliveries.reduce((sum, d) => sum + (d.distance_miles || 0), 0);
+
+    const totalDeliveryEarnings = completedDeliveries.reduce((sum, d) => sum + Math.max(0, d.earning || 0), 0);
+    const totalMileage = completedDeliveries.reduce((sum, d) => sum + Math.max(0, d.distance_miles || 0), 0);
 
     // Calculate shifts earnings (already correct)
     const filteredShifts = data.shifts.filter(s => {
@@ -146,7 +147,7 @@ const getReportDataForPeriod = (
 
     const earningsDataPoints = chartLabels.map(label => {
         const dailyDeliveries = completedDeliveries.filter(d => new Date(d.created_at).toLocaleDateString() === label);
-        const dailyDeliveryEarnings = dailyDeliveries.reduce((sum, d) => sum + (d.earning || 0), 0);
+        const dailyDeliveryEarnings = dailyDeliveries.reduce((sum, d) => sum + Math.max(0, d.earning || 0), 0);
 
         // Add hourly earnings for the day as well
         const dailyShifts = filteredShifts.filter(s => new Date(s.start_time).toLocaleDateString() === label);
@@ -154,7 +155,7 @@ const getReportDataForPeriod = (
             const shiftStart = new Date(s.start_time);
             const shiftEnd = s.status === 'ended' && s.end_time ? new Date(s.end_time) : now;
             const durationMinutes = (shiftEnd.getTime() - shiftStart.getTime()) / (1000 * 60);
-            return sum + (durationMinutes / 60) * hourlyRate;
+            return sum + Math.max(0, (durationMinutes / 60) * hourlyRate);
         }, 0);
 
         return dailyDeliveryEarnings + dailyHourlyEarnings;
@@ -163,7 +164,7 @@ const getReportDataForPeriod = (
     const mileageDataPoints = chartLabels.map(label =>
         completedDeliveries
             .filter(d => new Date(d.created_at).toLocaleDateString() === label)
-            .reduce((sum, d) => sum + (d.distance_miles || 0), 0)
+            .reduce((sum, d) => sum + Math.max(0, d.distance_miles || 0), 0)
     );
 
     const combinedChartData = {
@@ -261,7 +262,7 @@ const ReportView = ({ data, period, profile, connections, selectedConnectionId }
     const color = useColors();
     const hasData = combinedChart.labels.length > 0 && combinedChart.labels[0] !== 'No Data';
 
-    const goodDeliveriesPerHour = 4;
+    const goodDeliveriesPerHour = 3;
     const goodAvgDeliveryTime = 15;
     const goodAvgSpeed = 30;
 
@@ -269,9 +270,10 @@ const ReportView = ({ data, period, profile, connections, selectedConnectionId }
     const badAvgDeliveryTime = 40;
     const badAvgSpeed = 10;
 
-    const deliveriesPerHourScore = (Math.max(0, deliveriesPerHour - badDeliveriesPerHour) / (goodDeliveriesPerHour - badDeliveriesPerHour)) * 100;
-    const avgDeliveryTimeScore = (1 - Math.max(0, avgDeliveryTimeMinutes - goodAvgDeliveryTime) / (badAvgDeliveryTime - goodAvgDeliveryTime)) * 100;
-    const avgSpeedScore = (Math.max(0, avgSpeed - badAvgSpeed) / (goodAvgSpeed - badAvgSpeed)) * 100;
+    const deliveriesPerHourScore = Math.max(0, Math.min(100, ((deliveriesPerHour - badDeliveriesPerHour) / (goodDeliveriesPerHour - badDeliveriesPerHour)) * 100));
+    const avgDeliveryTimeScore = Math.max(0, Math.min(100, (1 - (avgDeliveryTimeMinutes - goodAvgDeliveryTime) / (badAvgDeliveryTime - goodAvgDeliveryTime)) * 100));
+    const avgSpeedScore = Math.max(0, Math.min(100, ((avgSpeed - badAvgSpeed) / (goodAvgSpeed - badAvgSpeed)) * 100));
+
 
     const efficiencyScore = (
         (deliveriesPerHourScore * 0.4) +
@@ -320,7 +322,7 @@ const ReportView = ({ data, period, profile, connections, selectedConnectionId }
 
     return (
         <ScrollView contentContainerStyle={{ padding: 20, alignItems: 'center' }}>
-            <View style={{ width: '100%', padding: 15, borderRadius: 10, marginBottom: 20, backgroundColor: color.white }}>
+            <View style={{ width: '100%', padding: 15, borderRadius: 10, marginBottom: 10, backgroundColor: color.white }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                     <View style={{ flex: 1, alignItems: 'flex-start' }}>
                         <UIText type="base" style={{ color: color.text_light }}>{isRestaurant ? "Delivery Payout" : "Delivery Fees"}</UIText>
@@ -344,8 +346,8 @@ const ReportView = ({ data, period, profile, connections, selectedConnectionId }
                 </View>
             </View>
 
-            <UIText type="subtitle" style={{ fontSize: 18, marginVertical: 10, alignSelf: 'flex-start', paddingLeft: 10, color: color.text }}>Performance Metrics</UIText>
-            <View style={{ width: '100%', padding: 15, borderRadius: 10, marginBottom: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: color.white }}>
+            {/* <UIText type="subtitle" style={{ fontSize: 18, marginVertical: 10, alignSelf: 'flex-start', paddingLeft: 10, color: color.text }}>Performance Metrics</UIText> */}
+            <View style={{ width: '100%', padding: 15, borderRadius: 10, marginBottom: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: color.white }}>
                 <View style={{ flex: 1.2, alignItems: 'center', justifyContent: 'center' }}>
                     <PerformanceChart score={finalEfficiencyScore} color={color} />
                     {/* <View style={{ marginTop: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
@@ -379,7 +381,7 @@ const ReportView = ({ data, period, profile, connections, selectedConnectionId }
                 </View>
             </View>
 
-            <UIText type="semiBold" style={{ fontSize: 18, marginVertical: 10, color: color.text, alignSelf: 'flex-start', paddingLeft: 10 }}>Performance Over Time</UIText>
+            {/* <UIText type="semiBold" style={{ fontSize: 18, marginVertical: 10, color: color.text, alignSelf: 'flex-start', paddingLeft: 10 }}>Performance Over Time</UIText> */}
 
             <LineChart
                 data={hasData ? combinedChart : zeroDataChart}
@@ -393,7 +395,7 @@ const ReportView = ({ data, period, profile, connections, selectedConnectionId }
                     labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
                 }}
                 bezier
-                style={{ marginVertical: 8, borderRadius: 16 }}
+                style={{ marginVertical: 0, borderRadius: 16 }}
                 withInnerLines={false}
                 withOuterLines={false}
             />

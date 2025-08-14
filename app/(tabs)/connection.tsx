@@ -37,6 +37,7 @@ interface Connection {
   mileage_rate: number;
   driver_name: string;
   restaurant_name: string;
+  restaurant_postcode: string
   invited_by: 'driver' | 'restaurant';
   created_at: string;
 }
@@ -100,7 +101,7 @@ export default function ConnectionScreen() {
     const oppositeRole = profile?.role === 'driver' ? 'restaurant' : 'driver';
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, name, role')
+      .select('id, name, role, postcode')
       .eq('role', oppositeRole)
       .ilike('name', `%${searchQuery}%`);
 
@@ -118,7 +119,7 @@ export default function ConnectionScreen() {
 
     const { data: recipientProfile, error: recipientError } = await supabase
       .from('profiles')
-      .select('name')
+      .select('name, postcode')
       .eq('id', recipientId)
       .single();
 
@@ -134,6 +135,9 @@ export default function ConnectionScreen() {
     const [driver_name, restaurant_name] = profile.role === 'driver'
       ? [profile.name, recipientProfile.name]
       : [recipientProfile.name, profile.name];
+
+    const restaurant_postcode = profile.role === 'driver'
+      ? recipientProfile.postcode : profile.postcode;
 
     const { hourly_rate, mileage_rate, role } = profile;
 
@@ -151,6 +155,7 @@ export default function ConnectionScreen() {
         hourly_rate,
         mileage_rate,
         invited_by: role,
+        restaurant_postcode,
         status: 'pending',
       });
 

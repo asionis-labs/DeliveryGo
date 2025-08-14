@@ -1,4 +1,4 @@
-import { View, StyleSheet, TouchableOpacity, Platform, Alert } from "react-native";
+import { View, StyleSheet, TouchableOpacity, Platform, Alert, SafeAreaView } from "react-native";
 import { UIText } from "@/components/UIText";
 import { useColors } from "@/hooks/useColors";
 import { useMemo, useState, useEffect } from "react";
@@ -35,6 +35,8 @@ interface Connection {
     restaurant_id: string;
     driver_id: string;
     status: 'accepted' | 'pending' | 'denied';
+    isPaid: boolean,
+    created_at: string
 }
 
 interface Profile {
@@ -60,6 +62,8 @@ interface DeliveryHeaderProps {
 }
 
 export default function DeliveryHeader({ data, onRefresh }: DeliveryHeaderProps) {
+
+
     const [dropdownVisible, setDropdownVisible] = useState(false);
     const [currentTime, setCurrentTime] = useState(new Date());
     const color = useColors();
@@ -68,6 +72,17 @@ export default function DeliveryHeader({ data, onRefresh }: DeliveryHeaderProps)
     const deliveries = data?.deliveries || [];
     const connections = data?.connections || [];
     const shifts = data?.shifts || [];
+    const activeConnection = connections.find(c => c.id === profile?.active_connection_id);
+
+    const isTrial = useMemo(() => {
+
+        if (!profile || !activeConnection?.created_at) return false;
+        const trialDurationDays = 7;
+        const trialStartDate = new Date(activeConnection.created_at);
+        const trialEndDate = new Date(trialStartDate.getTime() + trialDurationDays * 24 * 60 * 60 * 1000);
+        const now = new Date();
+        return now <= trialEndDate;
+    }, [activeConnection]);
 
     const displayedName = useMemo(() => {
         if (profile?.role === 'restaurant') {
@@ -92,6 +107,7 @@ export default function DeliveryHeader({ data, onRefresh }: DeliveryHeaderProps)
     const activeShift = useMemo(() => {
         return shifts.find(s => s.status === 'active');
     }, [shifts]);
+
 
     const totalShiftDurationAndStart = useMemo(() => {
         let totalMinutes = 0;
@@ -139,22 +155,32 @@ export default function DeliveryHeader({ data, onRefresh }: DeliveryHeaderProps)
             return Alert.alert("Error", "User profile not loaded.");
         }
 
-        let restaurantId: string | null;
-        let connectionId: string | null;
+        if (!isTrial && !activeConnection?.isPaid) {
+            Alert.alert("Subscription Required", "Your subscription has expired. Please update your payment to continue using this feature.");
+            return;
+        }
+
+        let driverId: string;
+        let restaurantId: string;
+        let connectionId: string;
 
         if (profile.role === 'driver') {
             if (!profile.active_connection_id) {
                 return Alert.alert("Error", "Please select a connection before starting a shift.");
             }
-            const activeConnection = connections.find(c => c.id === profile.active_connection_id);
             if (!activeConnection) {
                 return Alert.alert("Error", "Active connection details not found.");
             }
+            driverId = profile.id;
             restaurantId = activeConnection.restaurant_id;
-            connectionId = profile.active_connection_id;
+            connectionId = activeConnection.id;
         } else {
+            if (!activeConnection) {
+                return Alert.alert("Error", "Active connection details not found.");
+            }
+            driverId = activeConnection.driver_id;
             restaurantId = profile.id;
-            connectionId = null;
+            connectionId = activeConnection.id;
         }
 
         if (activeShift) {
@@ -229,6 +255,7 @@ export default function DeliveryHeader({ data, onRefresh }: DeliveryHeaderProps)
         }
     };
 
+
     const displayedConnections = useMemo(() => {
         if (!connections || !profile) {
             return [];
@@ -240,9 +267,10 @@ export default function DeliveryHeader({ data, onRefresh }: DeliveryHeaderProps)
         return [];
     }, [connections, profile]);
 
+
     return (
         <View style={{ flex: 1, padding: 20 }}>
-            <View style={[styles.container, { backgroundColor: color.primary_bg }]}>
+            <View style={[{ backgroundColor: color.primary_bg }]}>
                 <LineBreak height={Platform.OS === "android" ? 25 : 0} />
                 <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
                     <UIText type="title">Dashboard</UIText>

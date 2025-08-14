@@ -49,6 +49,7 @@ export default function OnboardingScreen() {
     const { session, setSession, profile, setProfile } = dataStore()
     const [loading, setLoading] = useState(false)
     const color = useColors()
+    const trialEndDate = new Date();
 
     const [form, setForm] = useState<FormState>({
         name: '',
@@ -96,6 +97,8 @@ export default function OnboardingScreen() {
 
         try {
             // 1. Create or update the user's base profile first.
+            trialEndDate.setDate(trialEndDate.getDate() + 7);
+
             const { data: newProfile, error: profileError } = await supabase.from('profiles').upsert({
                 id: session?.user?.id,
                 name: form.name,
@@ -108,7 +111,10 @@ export default function OnboardingScreen() {
                 postcode: form.postcode,
                 country: form.country,
                 hourly_rate: form.hourly_rate,
-                mileage_rate: form.mileage_rate
+                mileage_rate: form.mileage_rate,
+                // isPaid: false,
+                subscription_end: trialEndDate.toISOString(),
+
 
             }).select().single();
 
@@ -148,7 +154,8 @@ export default function OnboardingScreen() {
                     status: 'accepted',
                     driver_name: 'Demo_Driver',
                     restaurant_name: newProfile.name,
-                    restaurant_postcode: DEFAULT_RESTAURANT_POSTCODE // Correctly use form.postcode
+                    restaurant_postcode: DEFAULT_RESTAURANT_POSTCODE,
+                    // isPaid: false
 
                 }).select().single();
 

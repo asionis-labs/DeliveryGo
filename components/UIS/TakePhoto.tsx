@@ -2,7 +2,7 @@ import { UIText } from "@/components/UIText";
 import { UIButton } from "@/components/UIButton";
 import { View, StyleSheet, ActivityIndicator, Alert } from "react-native";
 import { useColors } from "@/hooks/useColors";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { FontAwesome5 } from "@expo/vector-icons";
 import * as ImagePicker from 'expo-image-picker';
 import { dataStore } from "@/store/dataStore";
@@ -45,6 +45,27 @@ export default function TakePhoto() {
     const { profile, deliveries, connections, shifts, setDeliveries } = dataStore();
     const GEMINI_API = Constants.expoConfig.extra.gemini_api;
     const Google_API = Constants.expoConfig.extra.google_api;
+    const activeConnection = connections.find(c => c.id === profile?.active_connection_id);
+
+
+    const isTrial = useMemo(() => {
+        if (!profile || !activeConnection?.created_at) return false;
+        const trialDurationDays = 7;
+        const trialStartDate = new Date(activeConnection.created_at);
+        const trialEndDate = new Date(trialStartDate.getTime() + trialDurationDays * 24 * 60 * 60 * 1000);
+        const now = new Date();
+        return now <= trialEndDate;
+    }, [activeConnection]);
+
+    const isPaid = useMemo(() => {
+        return !!activeConnection?.isPaid;
+    }, [activeConnection]);
+
+    const deliveryCount = useMemo(() => {
+        if (!deliveries || !activeConnection) return 0;
+        return deliveries.filter((delivery) => delivery.connection_id === activeConnection.id).length;
+    }, [deliveries, activeConnection]);
+
 
     const addDelivery = async (data: any, activeConnection: any) => {
         const activeShift = shifts.find(s => s.status === 'active');
@@ -97,6 +118,29 @@ export default function TakePhoto() {
 
 
     const handleTakePhoto = async () => {
+
+        if (!profile || !activeConnection) {
+            Alert.alert("Error", "You need to have an active connection to a restaurant.");
+            setIsProcessingImage(false);
+            return;
+        }
+
+        if (!isPaid) {
+            const limit = isTrial ? 20 : 2;
+            if (deliveryCount >= limit) {
+                Alert.alert(
+                    "Limit Reached",
+                    isTrial
+                        ? "Your free trial limit has been reached. Please ask them to subscribe to add more deliveries."
+                        : "Your connected restaurant's subscription has expired. Please ask them to subscribe to add more deliveries."
+                );
+                setIsProcessingImage(false);
+                return;
+            }
+        }
+
+
+
         setIsProcessingImage(true);
 
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -116,7 +160,6 @@ export default function TakePhoto() {
             return;
         }
 
-        const activeConnection = connections.find(c => c.id === profile?.active_connection_id);
         if (!activeConnection) {
             Alert.alert("Error", "You need to have an active connection to a restaurant.");
             setIsProcessingImage(false);
@@ -233,13 +276,16 @@ export default function TakePhoto() {
 const styles = StyleSheet.create({
     btnCont: {
         borderTopWidth: 1,
-        marginBottom: 50,
+        position: "absolute",
+        bottom: 0,
+        left: 0,
+        right: 0,
+        marginBottom: 40,
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingHorizontal: 20,
         paddingVertical: 10,
-        borderRadius: 10
     },
     loader: {
         position: 'absolute',

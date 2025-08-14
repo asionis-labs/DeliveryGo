@@ -46,15 +46,15 @@ export const Colors = {
 
   // Dark Theme
   dark: {
-    white: '#ffffff',
-    black: '#000000',
+    white: '#1e2536ff',
+    black: '#ffffff',
 
     primary_bg: '#0F172A',
     second_bg: '#1B2335',
     inputBG: '#252F45',
 
     text: '#dfd7fa',
-    text_light: '#5a5a83',
+    text_light: '#c3c3ceff',
 
     link: '#4c72f8',
     placeholder: '#5a5a83',
