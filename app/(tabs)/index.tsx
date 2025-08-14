@@ -1,12 +1,12 @@
 // app/(tabs)/index.tsx
 
-import { SafeAreaView, StyleSheet, View, StatusBar, FlatList, Alert, ActivityIndicator } from 'react-native';
+import { SafeAreaView, StyleSheet, View, StatusBar, FlatList, Alert, ActivityIndicator, RefreshControl } from 'react-native';
 import { useColors } from "@/hooks/useColors";
 import DeliveryHeader from "@/components/UIS/DeliveryHeader";
 import DeliveryItem from "@/components/UIS/DeliveryItem";
 import TakePhoto from "@/components/UIS/TakePhoto";
 import { dataStore } from "@/store/dataStore";
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 
@@ -15,6 +15,7 @@ export default function HomeScreen() {
     const [loading, setLoading] = useState(false);
     const [refreshKey, setRefreshKey] = useState(0);
     const tabBarHeight = useBottomTabBarHeight();
+    const [refreshing, setRefreshing] = useState(false);
 
     const { deliveries, setDeliveries, profile, connections, setConnections, shifts, setShifts } = dataStore();
 
@@ -109,6 +110,8 @@ export default function HomeScreen() {
             setLoading(false);
         };
         fetchData();
+        setRefreshing(false);
+
 
     }, [profile?.id, profile?.active_connection_id, refreshKey, setDeliveries, setShifts, setConnections]);
 
@@ -134,6 +137,13 @@ export default function HomeScreen() {
                     ListHeaderComponent={() => <DeliveryHeader data={DataObject} onRefresh={triggerRefresh} />}
                     contentContainerStyle={{ paddingBottom: tabBarHeight + 20 }} // Use tabBarHeight + some extra padding
                     extraData={deliveries}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={triggerRefresh}
+                        />
+                    }
+
                 />
                 <View
                     style={{

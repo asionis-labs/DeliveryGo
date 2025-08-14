@@ -12,17 +12,54 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "deliverygo",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "bundleIdentifier": "com.deliverygo.app",
+      "supportsTablet": true,
+      "associatedDomains": [
+        "applinks:deliverygo.co.uk"
+      ],
+      "infoPlist": {
+        "NSCameraUsageDescription": "DeliveryGo uses the camera to scan and upload photos.",
+        "NSPhotoLibraryUsageDescription": "DeliveryGo needs photo access to attach images to deliveries.",
+        "NSPhotoLibraryAddUsageDescription": "Allow DeliveryGo to save exported images.",
+        "NSLocationWhenInUseUsageDescription": "DeliveryGo uses your location for delivery routing and tracking."
+      }
     },
     "android": {
+      "package": "com.deliverygo.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "INTERNET",
+        "POST_NOTIFICATIONS"
+      ],
+      "edgeToEdgeEnabled": true,
+      "intentFilters": [
+        {
+          "autoVerify": true,
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "https",
+              "host": "deliverygo.co.uk",
+              "pathPrefix": "/"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
     },
     "web": {
       "bundler": "metro",

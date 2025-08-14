@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, ActivityIndicator, ScrollView, Dimensions, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, ActivityIndicator, ScrollView, RefreshControl, Dimensions, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { dataStore } from '@/store/dataStore';
 import { supabase } from '@/lib/supabase';
 import { TabView, TabBar } from 'react-native-tab-view';
@@ -254,7 +254,7 @@ const PerformanceChart = ({ score, color }: { score: number; color: any }) => {
     );
 };
 
-const ReportView = ({ data, period, profile, connections, selectedConnectionId }: { data: { deliveries: Delivery[]; shifts: Shift[] }, period: 'today' | 'week' | 'month' | 'year', profile: Profile, connections: Connection[], selectedConnectionId: string | 'all' }) => {
+const ReportView = ({ data, period, profile, connections, selectedConnectionId, onRefersh, refreshing }: { data: { deliveries: Delivery[]; shifts: Shift[] }, period: 'today' | 'week' | 'month' | 'year', profile: Profile, connections: Connection[], selectedConnectionId: string | 'all', onRefersh: any, refreshing: any }) => {
     const { aggregatedEarnings, totalEarnings, totalMileage, totalShiftDurationMinutes, hourlyEarning, combinedChart, avgDeliveryTimeMinutes, deliveriesPerHour, avgSpeed, totalDeliveries } = useMemo(() => {
         return getReportDataForPeriod(data, period, connections, selectedConnectionId, profile);
     }, [data, period, connections, selectedConnectionId, profile]);
@@ -280,6 +280,8 @@ const ReportView = ({ data, period, profile, connections, selectedConnectionId }
         (avgDeliveryTimeScore * 0.3) +
         (avgSpeedScore * 0.3)
     );
+
+
 
     const finalEfficiencyScore = Math.min(100, Math.max(0, Math.round(efficiencyScore)));
 
@@ -321,7 +323,9 @@ const ReportView = ({ data, period, profile, connections, selectedConnectionId }
     const isRestaurant = profile?.role === 'restaurant';
 
     return (
-        <ScrollView contentContainerStyle={{ padding: 20, alignItems: 'center' }}>
+        <ScrollView
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefersh} />}
+            contentContainerStyle={{ padding: 20, alignItems: 'center' }}>
             <View style={{ width: '100%', padding: 15, borderRadius: 10, marginBottom: 10, backgroundColor: color.white }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                     <View style={{ flex: 1, alignItems: 'flex-start' }}>
@@ -418,6 +422,12 @@ export default function ReportScreen() {
     const [reportData, setReportData] = useState<{ deliveries: Delivery[]; shifts: Shift[] }>({ deliveries: [], shifts: [] });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [refreshing, setRefreshing] = useState(false);
+
+    const handleRefresh = () => {
+        setRefreshing(true);
+    };
+
 
     const routes = useMemo(() => ([
         { key: 'today', title: 'Today' },
@@ -433,6 +443,7 @@ export default function ReportScreen() {
         const conn = connections.find(c => c.id === selectedConnectionId);
         return profile?.role === 'driver' ? conn?.restaurant_name : conn?.driver_name;
     }, [selectedConnectionId, connections, profile]);
+
 
     useEffect(() => {
         const fetchData = async () => {
@@ -482,7 +493,8 @@ export default function ReportScreen() {
         };
 
         fetchData();
-    }, [profile?.id, selectedConnectionId]);
+        setRefreshing(false)
+    }, [profile?.id, selectedConnectionId, refreshing]);
 
     const renderScene = ({ route }: any) => {
         if (!profile) return null;
@@ -492,6 +504,9 @@ export default function ReportScreen() {
             profile={profile as Profile}
             connections={connections}
             selectedConnectionId={selectedConnectionId}
+            onRefersh={handleRefresh}
+            refreshing={refreshing}
+
         />;
     };
 

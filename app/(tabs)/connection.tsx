@@ -183,6 +183,12 @@ export default function ConnectionScreen() {
 
   const handleDeleteConnection = async (connId: string) => {
     const connectionToDelete = connections.find(c => c.id === connId);
+
+    if (connectionToDelete) {
+      Alert.alert("Sorry", "You can't Delete Connection Now for Security Purpose")
+      return null
+    }
+
     if (!connectionToDelete) {
       Alert.alert("Error", "Connection not found.");
       return;
@@ -299,7 +305,7 @@ export default function ConnectionScreen() {
       <ScrollView style={styles.scrollView}>
         <View style={styles.contentContainer}>
           <View style={styles.headerContainer}>
-            <UIText type="title" style={styles.header}>Connections</UIText>
+            <UIText type="title">Connections</UIText>
             <UIButton
               label="Reload"
               type='tag'
@@ -521,9 +527,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
   },
-  header: {
-    paddingLeft: 5,
-  },
+
   sectionHeader: {
     paddingLeft: 5,
     marginBottom: 10,

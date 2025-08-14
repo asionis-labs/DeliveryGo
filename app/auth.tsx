@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import React, { useState, useRef, useEffect } from 'react';
 import { SafeAreaView, View, TextInput, Button, Alert, ActivityIndicator, useColorScheme } from 'react-native';
 
@@ -121,6 +121,7 @@ export default function AuthScreen() {
                     <UIText type="large">DeliveryGo</UIText>
                     <LineBreak height={20} />
                     <UIText type="subtitle">Sign in with your phone number</UIText>
+
                 </View>
 
                 <LineBreak height={30} />
@@ -185,11 +186,22 @@ export default function AuthScreen() {
                     </View>
                 )}
 
+
                 {loading && (
                     <View style={{ marginTop: 30 }}>
                         <ActivityIndicator size="large" color={color.btn} />
                     </View>
                 )}
+
+                <LineBreak height={40} />
+
+                <View>
+                    <UIText type='semiBold'>Experimental Mobile App Developed By</UIText>
+                    <UIText style={{ color: "green" }} type='link'>
+                        <Link href={"https://www.nazmul.uk"}>Nazmul Hossain</Link>
+                    </UIText>
+                </View>
+
             </View>
         </SafeAreaView>
     );
