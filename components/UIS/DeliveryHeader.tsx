@@ -1,4 +1,4 @@
-import { View, StyleSheet, TouchableOpacity, Platform, Alert, SafeAreaView } from "react-native";
+import { View, StyleSheet, TouchableOpacity, Platform, Alert } from "react-native";
 import { UIText } from "@/components/UIText";
 import { useColors } from "@/hooks/useColors";
 import { useMemo, useState, useEffect } from "react";
@@ -17,6 +17,7 @@ interface Delivery {
     status: 'ongoing' | 'completed';
     start_time: string;
     distance_miles: number;
+    connection_id: string;
 }
 
 interface Shift {
@@ -24,6 +25,7 @@ interface Shift {
     start_time: string;
     end_time: string | null;
     status: 'active' | 'ended';
+    connection_id: string;
 }
 
 interface Connection {
@@ -35,7 +37,7 @@ interface Connection {
     restaurant_id: string;
     driver_id: string;
     status: 'accepted' | 'pending' | 'denied';
-    isPaid: boolean,
+    subscription_end: string,
     created_at: string
 }
 
@@ -62,8 +64,6 @@ interface DeliveryHeaderProps {
 }
 
 export default function DeliveryHeader({ data, onRefresh }: DeliveryHeaderProps) {
-
-
     const [dropdownVisible, setDropdownVisible] = useState(false);
     const [currentTime, setCurrentTime] = useState(new Date());
     const color = useColors();
@@ -74,14 +74,11 @@ export default function DeliveryHeader({ data, onRefresh }: DeliveryHeaderProps)
     const shifts = data?.shifts || [];
     const activeConnection = connections.find(c => c.id === profile?.active_connection_id);
 
-    const isTrial = useMemo(() => {
-
-        if (!profile || !activeConnection?.created_at) return false;
-        const trialDurationDays = 7;
-        const trialStartDate = new Date(activeConnection.created_at);
-        const trialEndDate = new Date(trialStartDate.getTime() + trialDurationDays * 24 * 60 * 60 * 1000);
+    const isSubscriptionActive = useMemo(() => {
+        if (!activeConnection?.subscription_end) return false;
+        const subscriptionEnd = new Date(activeConnection.subscription_end);
         const now = new Date();
-        return now <= trialEndDate;
+        return now < subscriptionEnd;
     }, [activeConnection]);
 
     const displayedName = useMemo(() => {
@@ -100,33 +97,54 @@ export default function DeliveryHeader({ data, onRefresh }: DeliveryHeaderProps)
 
     const deliveryEarning = useMemo(() => {
         return deliveries
-            .filter(d => d.status === 'completed')
+            .filter(d => d.status === 'completed' && (d.connection_id === profile?.active_connection_id || profile?.active_connection_id === null))
             .reduce((sum, d) => sum + (d.earning || 0), 0);
-    }, [deliveries]);
+    }, [deliveries, profile]);
 
     const activeShift = useMemo(() => {
-        return shifts.find(s => s.status === 'active');
-    }, [shifts]);
-
+        const filteredShifts = shifts.filter(s => s.connection_id === profile?.active_connection_id || profile?.active_connection_id === null);
+        return filteredShifts.find(s => s.status === 'active');
+    }, [shifts, profile]);
 
     const totalShiftDurationAndStart = useMemo(() => {
         let totalMinutes = 0;
         let firstShiftStartTime = '--:--';
 
-        if (shifts.length > 0) {
-            const firstShift = shifts.reduce((prev, curr) => (new Date(prev.start_time) < new Date(curr.start_time) ? prev : curr));
+        // Filter shifts by the active connection before calculating
+        const filteredShifts = shifts.filter(s => s.connection_id === profile?.active_connection_id || profile?.active_connection_id === null);
+
+        const now = new Date();
+        const startOfPeriod = new Date(now);
+        startOfPeriod.setHours(3, 0, 0, 0);
+        if (now.getHours() < 3) {
+            startOfPeriod.setDate(startOfPeriod.getDate() - 1);
+        }
+
+        const endOfPeriod = new Date(startOfPeriod);
+        endOfPeriod.setDate(endOfPeriod.getDate() + 1);
+
+        const todaysShifts = filteredShifts.filter(s => {
+            const shiftStartTime = new Date(s.start_time);
+            const shiftEndTime = s.end_time ? new Date(s.end_time) : currentTime;
+
+            return (shiftStartTime < endOfPeriod && shiftEndTime >= startOfPeriod);
+        });
+
+        if (todaysShifts.length > 0) {
+            const firstShift = todaysShifts.reduce((prev, curr) => (new Date(prev.start_time) < new Date(curr.start_time) ? prev : curr));
             const start = new Date(firstShift.start_time);
             firstShiftStartTime = start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
         }
 
-        shifts.forEach(shift => {
-            if (shift.status === 'ended' && shift.end_time) {
-                const start = new Date(shift.start_time);
-                const end = new Date(shift.end_time);
-                totalMinutes += (end.getTime() - start.getTime()) / (1000 * 60);
-            } else if (shift.status === 'active') {
-                const start = new Date(shift.start_time);
-                totalMinutes += (currentTime.getTime() - start.getTime()) / (1000 * 60);
+        todaysShifts.forEach(shift => {
+            const shiftStart = new Date(shift.start_time);
+            let shiftEnd = shift.end_time ? new Date(shift.end_time) : currentTime;
+
+            const effectiveStart = new Date(Math.max(shiftStart.getTime(), startOfPeriod.getTime()));
+            const effectiveEnd = new Date(Math.min(shiftEnd.getTime(), endOfPeriod.getTime()));
+
+            if (effectiveEnd > effectiveStart) {
+                totalMinutes += (effectiveEnd.getTime() - effectiveStart.getTime()) / (1000 * 60);
             }
         });
 
@@ -138,10 +156,10 @@ export default function DeliveryHeader({ data, onRefresh }: DeliveryHeaderProps)
             startTime: firstShiftStartTime,
             totalMinutes
         };
-    }, [shifts, activeShift, currentTime]);
+    }, [shifts, profile, currentTime]);
 
     const hourlyEarnings = useMemo(() => {
-        const hourlyRate = profile?.hourly_rate || 0;
+        const hourlyRate = activeConnection?.hourly_rate || profile?.hourly_rate || 0;
         const totalMinutes = totalShiftDurationAndStart.totalMinutes;
         return (hourlyRate / 60) * totalMinutes;
     }, [profile?.hourly_rate, totalShiftDurationAndStart.totalMinutes]);
@@ -155,8 +173,11 @@ export default function DeliveryHeader({ data, onRefresh }: DeliveryHeaderProps)
             return Alert.alert("Error", "User profile not loaded.");
         }
 
-        if (!isTrial && !activeConnection?.isPaid) {
-            Alert.alert("Subscription Required", "Your subscription has expired. Please update your payment to continue using this feature.");
+        if (!isSubscriptionActive) {
+            Alert.alert(
+                "Subscription Required",
+                "Your subscription has expired. Please update your payment to continue using this feature or call +44 7707 771599."
+            );
             return;
         }
 
@@ -255,7 +276,6 @@ export default function DeliveryHeader({ data, onRefresh }: DeliveryHeaderProps)
         }
     };
 
-
     const displayedConnections = useMemo(() => {
         if (!connections || !profile) {
             return [];
@@ -266,7 +286,6 @@ export default function DeliveryHeader({ data, onRefresh }: DeliveryHeaderProps)
         }
         return [];
     }, [connections, profile]);
-
 
     return (
         <View style={{ flex: 1, padding: 20 }}>

@@ -56,73 +56,128 @@ const getReportDataForPeriod = (
     period: 'today' | 'week' | 'month' | 'year',
     connections: Connection[],
     selectedConnectionId: string | 'all',
-    profile: Profile
+    profile: Profile | null // Profile can now be null
 ) => {
+    if (!profile) {
+        return {
+            totalEarnings: 0,
+            totalMileage: 0,
+            totalShiftDurationMinutes: 0,
+            hourlyEarning: 0,
+            combinedChart: { labels: ['No Data'], datasets: [{ data: [0] }, { data: [0] }], legend: [] },
+            avgDeliveryTimeMinutes: 0,
+            deliveriesPerHour: 0,
+            avgSpeed: 0,
+            totalDeliveries: 0,
+            aggregatedEarnings: 0,
+        };
+    }
+
     const now = new Date();
     let startDate: Date;
+    let periodEndDate: Date;
+    const isBefore3AM = now.getHours() < 3;
 
     switch (period) {
         case 'today':
-            startDate = new Date(now.setHours(0, 0, 0, 0));
+            startDate = new Date(now);
+            startDate.setHours(3, 0, 0, 0);
+            if (isBefore3AM) {
+                startDate.setDate(startDate.getDate() - 1);
+            }
+            periodEndDate = new Date(startDate);
+            periodEndDate.setDate(startDate.getDate() + 1);
             break;
         case 'week':
-            startDate = new Date(now.setDate(now.getDate() - 7));
+            startDate = new Date(now);
+            startDate.setHours(3, 0, 0, 0);
+            if (isBefore3AM) {
+                startDate.setDate(startDate.getDate() - 1);
+            }
+            startDate.setDate(startDate.getDate() - 7);
+
+            periodEndDate = new Date(now);
+            periodEndDate.setHours(2, 59, 59, 999);
+            periodEndDate.setDate(periodEndDate.getDate() + 1);
             break;
         case 'month':
-            startDate = new Date(now.setMonth(now.getMonth() - 1));
+            startDate = new Date(now);
+            startDate.setHours(3, 0, 0, 0);
+            if (isBefore3AM) {
+                startDate.setDate(startDate.getDate() - 1);
+            }
+            startDate.setDate(startDate.getDate() - 30);
+
+            periodEndDate = new Date(now);
+            periodEndDate.setHours(2, 59, 59, 999);
+            periodEndDate.setDate(periodEndDate.getDate() + 1);
             break;
         case 'year':
-            startDate = new Date(now.setFullYear(now.getFullYear() - 1));
+            startDate = new Date(now);
+            startDate.setHours(3, 0, 0, 0);
+            if (isBefore3AM) {
+                startDate.setDate(startDate.getDate() - 1);
+            }
+            startDate.setDate(startDate.getDate() - 365);
+
+            periodEndDate = new Date(now);
+            periodEndDate.setHours(2, 59, 59, 999);
+            periodEndDate.setDate(periodEndDate.getDate() + 1);
             break;
         default:
             startDate = new Date(0);
+            periodEndDate = now;
     }
 
-    const hourlyRate = profile.hourly_rate;
-
-    // Filter deliveries by period and connection first
     const periodDeliveries = data.deliveries.filter(d => {
         const deliveryDate = new Date(d.created_at);
-        const isWithinPeriod = deliveryDate >= startDate;
+        const isWithinPeriod = deliveryDate >= startDate && deliveryDate <= periodEndDate;
         const isForConnection = selectedConnectionId === 'all' || d.connection_id === selectedConnectionId;
         return isWithinPeriod && isForConnection;
     });
 
-    // --- FIX: Filter for 'completed' deliveries to use for all calculations ---
     const completedDeliveries = periodDeliveries.filter(d => d.status === 'completed' && d.completed_at);
-
-    // Calculate total earnings and mileage from COMPLETED deliveries
 
     const totalDeliveryEarnings = completedDeliveries.reduce((sum, d) => sum + Math.max(0, d.earning || 0), 0);
     const totalMileage = completedDeliveries.reduce((sum, d) => sum + Math.max(0, d.distance_miles || 0), 0);
 
-    // Calculate shifts earnings (already correct)
     const filteredShifts = data.shifts.filter(s => {
         const shiftStartDate = new Date(s.start_time);
-        const isWithinPeriod = shiftStartDate >= startDate;
+        const shiftEndDate = s.end_time ? new Date(s.end_time) : now;
         const isForConnection = selectedConnectionId === 'all' || s.connection_id === selectedConnectionId;
-        return isWithinPeriod && isForConnection;
+        const overlapsWithPeriod = (shiftStartDate <= periodEndDate && shiftEndDate >= startDate);
+        return overlapsWithPeriod && isForConnection;
     });
-
 
     let totalHourlyEarning = 0;
     let totalShiftDurationMinutes = 0;
 
     filteredShifts.forEach(shift => {
         const shiftStart = new Date(shift.start_time);
-        const shiftEnd = shift.status === 'ended' && shift.end_time ? new Date(shift.end_time) : now;
+        let shiftEnd: Date;
 
-        // This is the correct logic you identified
-        if (shiftEnd > shiftStart) {
-            const shiftDurationMinutes = (shiftEnd.getTime() - shiftStart.getTime()) / (1000 * 60);
+        if (shift.status === 'ended' && shift.end_time) {
+            shiftEnd = new Date(shift.end_time);
+        } else {
+            shiftEnd = now;
+        }
+
+        const effectiveShiftStart = new Date(Math.max(shiftStart.getTime(), startDate.getTime()));
+        const effectiveShiftEnd = new Date(Math.min(shiftEnd.getTime(), periodEndDate.getTime()));
+
+        if (effectiveShiftEnd > effectiveShiftStart) {
+            const shiftDurationMinutes = (effectiveShiftEnd.getTime() - effectiveShiftStart.getTime()) / (1000 * 60);
             totalShiftDurationMinutes += shiftDurationMinutes;
-            totalHourlyEarning += (shiftDurationMinutes / 60) * hourlyRate;
+
+            const connectionRate = connections.find(c => c.id === shift.connection_id)?.hourly_rate;
+            const effectiveHourlyRate = connectionRate !== undefined ? connectionRate : profile.hourly_rate;
+
+            totalHourlyEarning += (shiftDurationMinutes / 60) * effectiveHourlyRate;
         }
     });
 
     const aggregatedEarnings = totalDeliveryEarnings + totalHourlyEarning;
 
-    // Calculate delivery-specific metrics based on completed deliveries
     let totalDeliveryDurationMinutes = 0;
     completedDeliveries.forEach(delivery => {
         const start = new Date(delivery.start_time);
@@ -141,30 +196,83 @@ const getReportDataForPeriod = (
     const deliveriesPerHour = hasValidDeliveryTime ? totalDeliveries / totalDeliveryHours : 0;
     const avgSpeed = hasValidDeliveryTime ? totalMileage / totalDeliveryHours : 0;
 
-    // --- FIX: Chart data points now use only completed deliveries ---
-    const chartLabels = [...new Set(completedDeliveries.map(d => new Date(d.created_at).toLocaleDateString()))].sort();
+    const chartLabels = [...new Set(filteredShifts.map(s => {
+        const shiftDate = new Date(s.start_time);
+        if (shiftDate.getHours() < 3) {
+            shiftDate.setDate(shiftDate.getDate() - 1);
+        }
+        return shiftDate.toLocaleDateString();
+    }))].sort();
 
     const earningsDataPoints = chartLabels.map(label => {
-        const dailyDeliveries = completedDeliveries.filter(d => new Date(d.created_at).toLocaleDateString() === label);
-        const dailyDeliveryEarnings = dailyDeliveries.reduce((sum, d) => sum + Math.max(0, d.earning || 0), 0);
+        const dailyShifts = filteredShifts.filter(s => {
+            const shiftDate = new Date(s.start_time);
+            if (shiftDate.getHours() < 3) {
+                shiftDate.setDate(shiftDate.getDate() - 1);
+            }
+            return shiftDate.toLocaleDateString() === label;
+        });
 
-        // Add hourly earnings for the day as well
-        const dailyShifts = filteredShifts.filter(s => new Date(s.start_time).toLocaleDateString() === label);
         const dailyHourlyEarnings = dailyShifts.reduce((sum, s) => {
             const shiftStart = new Date(s.start_time);
-            const shiftEnd = s.status === 'ended' && s.end_time ? new Date(s.end_time) : now;
-            const durationMinutes = (shiftEnd.getTime() - shiftStart.getTime()) / (1000 * 60);
-            return sum + Math.max(0, (durationMinutes / 60) * hourlyRate);
+            let shiftEnd: Date;
+
+            if (s.status === 'ended' && s.end_time) {
+                shiftEnd = new Date(s.end_time);
+            } else {
+                shiftEnd = now;
+            }
+
+            const effectiveShiftStart = new Date(Math.max(shiftStart.getTime(), startDate.getTime()));
+            const effectiveShiftEnd = new Date(Math.min(shiftEnd.getTime(), periodEndDate.getTime()));
+
+            const connectionRate = connections.find(c => c.id === s.connection_id)?.hourly_rate;
+            const effectiveHourlyRate = connectionRate !== undefined ? connectionRate : profile.hourly_rate;
+
+            const durationMinutes = (effectiveShiftEnd.getTime() - effectiveShiftStart.getTime()) / (1000 * 60);
+            return sum + Math.max(0, (durationMinutes / 60) * effectiveHourlyRate);
         }, 0);
+
+        const dailyDeliveryEarnings = completedDeliveries
+            .filter(d => {
+                const deliveryDate = new Date(d.created_at);
+                if (deliveryDate.getHours() < 3) {
+                    deliveryDate.setDate(deliveryDate.getDate() - 1);
+                }
+                return deliveryDate.toLocaleDateString() === label;
+            })
+            .reduce((sum, d) => sum + Math.max(0, d.earning || 0), 0);
 
         return dailyDeliveryEarnings + dailyHourlyEarnings;
     });
 
-    const mileageDataPoints = chartLabels.map(label =>
-        completedDeliveries
-            .filter(d => new Date(d.created_at).toLocaleDateString() === label)
-            .reduce((sum, d) => sum + Math.max(0, d.distance_miles || 0), 0)
-    );
+    const hoursDataPoints = chartLabels.map(label => {
+        const dailyShifts = filteredShifts.filter(s => {
+            const shiftDate = new Date(s.start_time);
+            if (shiftDate.getHours() < 3) {
+                shiftDate.setDate(shiftDate.getDate() - 1);
+            }
+            return shiftDate.toLocaleDateString() === label;
+        });
+
+        const dailyDurationMinutes = dailyShifts.reduce((sum, s) => {
+            const shiftStart = new Date(s.start_time);
+            let shiftEnd: Date;
+
+            if (s.status === 'ended' && s.end_time) {
+                shiftEnd = new Date(s.end_time);
+            } else {
+                shiftEnd = now;
+            }
+
+            const effectiveShiftStart = new Date(Math.max(shiftStart.getTime(), startDate.getTime()));
+            const effectiveShiftEnd = new Date(Math.min(shiftEnd.getTime(), periodEndDate.getTime()));
+
+            const durationMinutes = (effectiveShiftEnd.getTime() - effectiveShiftStart.getTime()) / (1000 * 60);
+            return sum + durationMinutes;
+        }, 0);
+        return dailyDurationMinutes / 60;
+    });
 
     const combinedChartData = {
         labels: chartLabels.length > 0 ? chartLabels : ['No Data'],
@@ -176,13 +284,13 @@ const getReportDataForPeriod = (
                 legend: "Earnings"
             },
             {
-                data: mileageDataPoints.length > 0 ? mileageDataPoints : [0],
+                data: hoursDataPoints.length > 0 ? hoursDataPoints : [0],
                 color: (opacity = 1) => `rgba(36, 154, 131, ${opacity})`,
                 strokeWidth: 2,
-                legend: "Mileage"
+                legend: "Hours"
             }
         ],
-        legend: ["Earnings", "Mileage"]
+        legend: ["Earnings", "Hours"]
     };
 
     return {
@@ -253,13 +361,17 @@ const PerformanceChart = ({ score, color }: { score: number; color: any }) => {
     );
 };
 
-const ReportView = ({ data, period, profile, connections, selectedConnectionId, onRefersh, refreshing }: { data: { deliveries: Delivery[]; shifts: Shift[] }, period: 'today' | 'week' | 'month' | 'year', profile: Profile, connections: Connection[], selectedConnectionId: string | 'all', onRefersh: any, refreshing: any }) => {
-    const { aggregatedEarnings, totalEarnings, totalMileage, totalShiftDurationMinutes, hourlyEarning, combinedChart, avgDeliveryTimeMinutes, deliveriesPerHour, avgSpeed, totalDeliveries } = useMemo(() => {
+const ReportView = ({ data, period, profile, connections, selectedConnectionId, onRefersh, refreshing }: { data: { deliveries: Delivery[]; shifts: Shift[] }, period: 'today' | 'week' | 'month' | 'year', profile: Profile | null, connections: Connection[], selectedConnectionId: string | 'all', onRefersh: any, refreshing: any }) => {
+    const { aggregatedEarnings, totalEarnings, totalShiftDurationMinutes, hourlyEarning, combinedChart, avgDeliveryTimeMinutes, deliveriesPerHour, avgSpeed, totalDeliveries } = useMemo(() => {
         return getReportDataForPeriod(data, period, connections, selectedConnectionId, profile);
     }, [data, period, connections, selectedConnectionId, profile]);
 
     const color = useColors();
     const hasData = combinedChart.labels.length > 0 && combinedChart.labels[0] !== 'No Data';
+
+    const totalHours = Math.floor(totalShiftDurationMinutes / 60);
+    const totalMinutes = Math.round(totalShiftDurationMinutes % 60);
+    const totalWorkingHours = `${totalHours}h ${totalMinutes}m`;
 
     const goodDeliveriesPerHour = 3;
     const goodAvgDeliveryTime = 15;
@@ -273,14 +385,11 @@ const ReportView = ({ data, period, profile, connections, selectedConnectionId, 
     const avgDeliveryTimeScore = Math.max(0, Math.min(100, (1 - (avgDeliveryTimeMinutes - goodAvgDeliveryTime) / (badAvgDeliveryTime - goodAvgDeliveryTime)) * 100));
     const avgSpeedScore = Math.max(0, Math.min(100, ((avgSpeed - badAvgSpeed) / (goodAvgSpeed - badAvgSpeed)) * 100));
 
-
     const efficiencyScore = (
         (deliveriesPerHourScore * 0.4) +
         (avgDeliveryTimeScore * 0.3) +
         (avgSpeedScore * 0.3)
     );
-
-
 
     const finalEfficiencyScore = Math.min(100, Math.max(0, Math.round(efficiencyScore)));
 
@@ -313,10 +422,10 @@ const ReportView = ({ data, period, profile, connections, selectedConnectionId, 
                 data: [0],
                 color: (opacity = 1) => `rgba(36, 154, 131, ${opacity})`,
                 strokeWidth: 2,
-                legend: "Mileage"
+                legend: "Hours"
             }
         ],
-        legend: ["Earnings", "Mileage"]
+        legend: ["Earnings", "Hours"]
     };
 
     const isRestaurant = profile?.role === 'restaurant';
@@ -332,40 +441,27 @@ const ReportView = ({ data, period, profile, connections, selectedConnectionId, 
                         <UIText type="subtitle" style={{ color: color.btn }}>£{totalEarnings.toFixed(2)}</UIText>
                     </View>
                     <View style={{ flex: 1, alignItems: 'flex-start' }}>
-                        <UIText type="base" style={{ color: color.text_light }}>Total Miles</UIText>
-                        <UIText type="subtitle" style={{ fontSize: 24, color: color.success }}>{totalMileage.toFixed(2)}</UIText>
+                        <UIText type="base" style={{ color: color.text_light }}>Total Working Hours</UIText>
+                        <UIText type="subtitle" style={{ color: color.success }}>{totalWorkingHours}</UIText>
                     </View>
                 </View>
                 <View style={{ width: '100%', height: 1, backgroundColor: color.border, marginVertical: 10 }} />
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 5 }}>
                     <View style={{ flex: 1, alignItems: 'flex-start' }}>
                         <UIText type="base" style={{ color: color.text_light }}>{isRestaurant ? "Hourly Cost" : "Hourly Earning"}</UIText>
-                        <UIText type="subtitle" style={{ fontSize: 24, color: color.success }}>£{hourlyEarning.toFixed(2)}</UIText>
+                        <UIText type="subtitle" style={{ color: color.success }}>£{hourlyEarning.toFixed(2)}</UIText>
                     </View>
                     <View style={{ flex: 1, alignItems: 'flex-start' }}>
                         <UIText type="base" style={{ color: color.text_light }}>Total Earning</UIText>
-                        <UIText type="subtitle" style={{ fontSize: 24, color: color.btn }}>£{aggregatedEarnings.toFixed(2)}</UIText>
+                        <UIText type="subtitle" style={{ color: color.btn }}>£{aggregatedEarnings.toFixed(2)}</UIText>
                     </View>
                 </View>
             </View>
 
-            {/* <UIText type="subtitle" style={{ fontSize: 18, marginVertical: 10, alignSelf: 'flex-start', paddingLeft: 10, color: color.text }}>Performance Metrics</UIText> */}
             <View style={{ width: '100%', padding: 15, borderRadius: 10, marginBottom: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: color.white }}>
                 <View style={{ flex: 1.2, alignItems: 'center', justifyContent: 'center' }}>
                     <PerformanceChart score={finalEfficiencyScore} color={color} />
-                    {/* <View style={{ marginTop: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                        <View style={{ alignItems: 'center', justifyContent: 'center', flex: 1, paddingHorizontal: 5 }}>
-                            <UIText type="semiBold" style={{ fontSize: 16 }}>£{hourlyEarning.toFixed(2)}</UIText>
-                            <UIText type="base" style={{ fontSize: 10, marginTop: 2, color: color.text_light }}>Hourly Earning</UIText>
-                        </View>
-                        <View style={{ height: '80%', width: 1, backgroundColor: '#ccc' }} />
-                        <View style={{ alignItems: 'center', justifyContent: 'center', flex: 1, paddingHorizontal: 5 }}>
-                            <UIText type="semiBold" style={{ fontSize: 16 }}>{totalDeliveries}</UIText>
-                            <UIText type="base" style={{ fontSize: 10, marginTop: 2, color: color.text_light }}>Deliveries</UIText>
-                        </View>
-                    </View> */}
                 </View>
-
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'flex-end' }}>
                     <View style={{ alignItems: 'flex-end' }}>
                         <UIText type="semiBold" style={{ fontSize: 16 }}>{avgDeliveryTimeMinutes.toFixed(0)} min</UIText>
@@ -383,8 +479,6 @@ const ReportView = ({ data, period, profile, connections, selectedConnectionId, 
                     </View>
                 </View>
             </View>
-
-            {/* <UIText type="semiBold" style={{ fontSize: 18, marginVertical: 10, color: color.text, alignSelf: 'flex-start', paddingLeft: 10 }}>Performance Over Time</UIText> */}
 
             <LineChart
                 data={hasData ? combinedChart : zeroDataChart}
@@ -408,7 +502,7 @@ const ReportView = ({ data, period, profile, connections, selectedConnectionId, 
                     <UIText type="base" style={{ textAlign: 'center', position: 'absolute', top: 580, color: color.text_light }}>No data available for this period.</UIText>
                 )
             }
-        </ScrollView >
+        </ScrollView>
     );
 };
 
@@ -427,7 +521,6 @@ export default function ReportScreen() {
         setRefreshing(true);
     };
 
-
     const routes = useMemo(() => ([
         { key: 'today', title: 'Today' },
         { key: 'week', title: 'Week' },
@@ -442,7 +535,6 @@ export default function ReportScreen() {
         const conn = connections.find(c => c.id === selectedConnectionId);
         return profile?.role === 'driver' ? conn?.restaurant_name : conn?.driver_name;
     }, [selectedConnectionId, connections, profile]);
-
 
     useEffect(() => {
         const fetchData = async () => {
@@ -496,16 +588,14 @@ export default function ReportScreen() {
     }, [profile?.id, selectedConnectionId, refreshing]);
 
     const renderScene = ({ route }: any) => {
-        if (!profile) return null;
         return <ReportView
             data={reportData}
             period={route.key}
-            profile={profile as Profile}
+            profile={profile}
             connections={connections}
             selectedConnectionId={selectedConnectionId}
             onRefersh={handleRefresh}
             refreshing={refreshing}
-
         />;
     };
 

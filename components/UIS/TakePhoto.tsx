@@ -48,17 +48,11 @@ export default function TakePhoto() {
     const activeConnection = connections.find(c => c.id === profile?.active_connection_id);
 
 
-    const isTrial = useMemo(() => {
-        if (!profile || !activeConnection?.created_at) return false;
-        const trialDurationDays = 7;
-        const trialStartDate = new Date(activeConnection.created_at);
-        const trialEndDate = new Date(trialStartDate.getTime() + trialDurationDays * 24 * 60 * 60 * 1000);
+    const isSubscriptionActive = useMemo(() => {
+        if (!activeConnection?.subscription_end) return false;
+        const subscriptionEnd = new Date(activeConnection.subscription_end);
         const now = new Date();
-        return now <= trialEndDate;
-    }, [activeConnection]);
-
-    const isPaid = useMemo(() => {
-        return !!activeConnection?.isPaid;
+        return now < subscriptionEnd;
     }, [activeConnection]);
 
     const deliveryCount = useMemo(() => {
@@ -125,21 +119,17 @@ export default function TakePhoto() {
             return;
         }
 
-        if (!isPaid) {
-            const limit = isTrial ? 20 : 2;
+        if (!isSubscriptionActive) {
+            const limit = 2;
             if (deliveryCount >= limit) {
                 Alert.alert(
                     "Limit Reached",
-                    isTrial
-                        ? "Your free trial limit has been reached. Please ask them to subscribe to add more deliveries."
-                        : "Your connected restaurant's subscription has expired. Please ask them to subscribe to add more deliveries."
+                    "Your connected restaurant's subscription has expired. Please ask them to subscribe to add more deliveries."
                 );
                 setIsProcessingImage(false);
                 return;
             }
         }
-
-
 
         setIsProcessingImage(true);
 

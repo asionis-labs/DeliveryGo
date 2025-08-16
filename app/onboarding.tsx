@@ -11,7 +11,7 @@ import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { UIInput } from '@/components/UIInput';
 
-// Define the Connection type with the missing property
+// Define the Connection type
 type Connection = {
     id: string;
     driver_id: string;
@@ -22,7 +22,8 @@ type Connection = {
     status: 'pending' | 'accepted' | 'declined';
     driver_name: string;
     restaurant_name: string;
-    restaurant_postcode: string; // This property was missing
+    restaurant_postcode: string;
+    subscription_end?: string;
 };
 
 
@@ -61,7 +62,7 @@ export default function OnboardingScreen() {
         postcode: '',
         country: '',
         hourly_rate: 12.21,
-        mileage_rate: 0.9,
+        mileage_rate: 0.7,
     });
 
     useEffect(() => {
@@ -96,9 +97,41 @@ export default function OnboardingScreen() {
         setLoading(true);
 
         try {
-            // 1. Create or update the user's base profile first.
-            trialEndDate.setDate(trialEndDate.getDate() + 7);
+            let subscriptionEndDate: string | null = null;
+            const userPhone = session?.user?.phone;
 
+            if (userPhone) {
+                // Check if the user has a trial history
+                const { data: trialHistory, error: historyError } = await supabase
+                    .from('user_trial_history')
+                    .select('trial_start_date')
+                    .eq('phone', userPhone)
+                    .single();
+
+                if (historyError && historyError.code !== 'PGRST116') {
+                    // PGRST116 is the "no rows found" error, which is expected for new users.
+                    throw historyError;
+                }
+
+                if (!trialHistory) {
+                    // User has no trial history, so give them a 10-day trial.
+                    const trialDurationDays = 10;
+                    const trialEndDate = new Date();
+                    trialEndDate.setDate(trialEndDate.getDate() + trialDurationDays);
+                    subscriptionEndDate = trialEndDate.toISOString();
+
+                    // Insert a record into the trial history table
+                    const { error: insertError } = await supabase
+                        .from('user_trial_history')
+                        .insert({ phone: userPhone });
+
+                    if (insertError) {
+                        throw insertError;
+                    }
+                }
+            }
+
+            // Create or update the user's base profile.
             const { data: newProfile, error: profileError } = await supabase.from('profiles').upsert({
                 id: session?.user?.id,
                 name: form.name,
@@ -112,10 +145,7 @@ export default function OnboardingScreen() {
                 country: form.country,
                 hourly_rate: form.hourly_rate,
                 mileage_rate: form.mileage_rate,
-                // isPaid: false,
-                subscription_end: trialEndDate.toISOString(),
-
-
+                subscription_end: subscriptionEndDate, // Correctly sets the trial end date or null
             }).select().single();
 
             if (profileError) {
@@ -125,9 +155,9 @@ export default function OnboardingScreen() {
                 return;
             }
 
-            let newConnection: Connection | null = null; // Use the corrected type
+            let newConnection: Connection | null = null;
 
-            // 2. Create the default connection and get the connection data.
+            // Create the default connection and get the connection data.
             if (newProfile.role === 'driver') {
                 const { data: connectionData, error: connectionError } = await supabase.from('connections').insert({
                     driver_id: newProfile.id,
@@ -138,7 +168,8 @@ export default function OnboardingScreen() {
                     status: 'accepted',
                     driver_name: newProfile.name,
                     restaurant_name: 'Demo_Restaurant',
-                    restaurant_postcode: form.postcode // Correctly use form.postcode
+                    restaurant_postcode: form.postcode,
+                    subscription_end: subscriptionEndDate // **CORRECTED:** Pass the subscription date to the connection table.
                 }).select().single();
 
                 if (connectionError) throw connectionError;
@@ -155,22 +186,21 @@ export default function OnboardingScreen() {
                     driver_name: 'Demo_Driver',
                     restaurant_name: newProfile.name,
                     restaurant_postcode: DEFAULT_RESTAURANT_POSTCODE,
-                    // isPaid: false
-
+                    subscription_end: subscriptionEndDate // **CORRECTED:** Pass the subscription date to the connection table.
                 }).select().single();
 
                 if (connectionError) throw connectionError;
-
                 newConnection = connectionData;
             }
 
-            // 3. Update the profile with the active connection details using a new API call.
+            // Update the profile with the active connection details and subscription end date.
             if (newConnection) {
                 const activeConnectionName = newProfile.role === 'driver' ? newConnection.restaurant_name : newConnection.driver_name;
 
                 const { data: updatedProfile, error: updateError } = await supabase.from('profiles').update({
                     active_connection_id: newConnection.id,
                     active_connection_name: activeConnectionName,
+                    subscription_end: subscriptionEndDate // **CORRECTED:** Ensure this is included in the final update.
                 }).eq('id', newProfile.id).select().single();
 
                 if (updateError) {
@@ -215,13 +245,11 @@ export default function OnboardingScreen() {
 
                     <View style={{ flexDirection: 'row', gap: 15, marginBottom: 20 }}>
                         {['driver', 'restaurant'].map((role) => (
-
                             <UIButton
                                 key={role}
                                 label={role.charAt(0).toUpperCase() + role.slice(1)}
                                 onPress={() => handleRoleSelect(role as 'driver' | 'restaurant')}
                                 icon={role === 'driver' ? <FontAwesome5 name="car" size={24} color={form.role === role ? color.white : color.black} /> : <Ionicons name="restaurant" size={24} color={form.role === role ? color.white : color.black} />}
-
                                 style={{
                                     paddingVertical: 15,
                                     paddingHorizontal: 20,
@@ -242,7 +270,6 @@ export default function OnboardingScreen() {
                     <UIInput placeholder={form.role === 'restaurant' ? 'Restaurant Name' : 'Full Name'}
                         value={form.name} onChangeText={(v) => handleChange('name', v)} iconName="user-tie" />
                     <UIInput placeholder="Email" value={form.email} onChangeText={(v) => handleChange('email', v)} iconName="mail-bulk" keyboardType="email-address" />
-
                     <UIInput
                         placeholder="Hourly Rate"
                         value={String(form.hourly_rate)}
@@ -250,8 +277,6 @@ export default function OnboardingScreen() {
                         iconName="pound-sign"
                         keyboardType="numeric"
                     />
-
-                    {/* New Input for Mileage Rate */}
                     <UIInput
                         placeholder="Mileage Rate"
                         value={String(form.mileage_rate)}
@@ -259,17 +284,10 @@ export default function OnboardingScreen() {
                         iconName="car"
                         keyboardType="numeric"
                     />
-                    {/* <UIInput placeholder="House Number" value={form.house_number} onChangeText={(v) => handleChange('house_number', v)} iconName="home" /> */}
                     <UIInput placeholder="Street Address" value={form.street} onChangeText={(v) => handleChange('street', v)} iconName="road" />
                     <UIInput placeholder="Town" value={form.town} onChangeText={(v) => handleChange('town', v)} iconName="city" />
                     <UIInput placeholder="Postcode" value={form.postcode} onChangeText={(v) => handleChange('postcode', v)} iconName="mail-bulk" />
-                    {/* <UIInput placeholder="Country" value={form.country} onChangeText={(v) => handleChange('country', v)} iconName="globe" /> */}
                     <LineBreak />
-
-
-
-
-
                     <View style={{ marginTop: 20 }}>
 
                         <UIButton label={loading ? "Submitting..." : "Submit Profile"}

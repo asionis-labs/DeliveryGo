@@ -12,7 +12,7 @@ export type Connection = {
     restaurant_name: string;
     driver_name: string,
     restaurant_postcode: string
-    isPaid?: boolean,
+    subscription_end?: string,
     created_at?: string
     // ... add other fields
 };
@@ -61,7 +61,6 @@ export type UserProfile = {
     mileage_rate?: number;
     active_connection_id?: string;
     active_connection_name?: string;
-    isPaid?: boolean,
     subscription_end?: string
 };
 

@@ -1,17 +1,17 @@
-// app/(tabs)/index.tsx
-
 import { SafeAreaView, StyleSheet, View, StatusBar, FlatList, Alert, ActivityIndicator, RefreshControl } from 'react-native';
+import React, { useEffect, useMemo, useState } from "react";
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
+
 import { useColors } from "@/hooks/useColors";
 import DeliveryHeader from "@/components/UIS/DeliveryHeader";
 import DeliveryItem from "@/components/UIS/DeliveryItem";
 import TakePhoto from "@/components/UIS/TakePhoto";
 import { dataStore } from "@/store/dataStore";
-import React, { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 
 export default function HomeScreen() {
     const color = useColors();
+
     const [loading, setLoading] = useState(false);
     const [refreshKey, setRefreshKey] = useState(0);
     const tabBarHeight = useBottomTabBarHeight();
@@ -34,6 +34,7 @@ export default function HomeScreen() {
     }, [deliveries]);
 
     const triggerRefresh = () => {
+        setRefreshing(true);
         setRefreshKey(prevKey => prevKey + 1);
     };
 
@@ -48,9 +49,6 @@ export default function HomeScreen() {
             }
 
             setLoading(true);
-            const startOfDay = new Date();
-            startOfDay.setHours(0, 0, 0, 0);
-            const today = startOfDay.toISOString();
 
             // Fetch all accepted connections for the current user
             const { data: connectionsData, error: connectionsError } = await supabase
@@ -59,8 +57,6 @@ export default function HomeScreen() {
                 .or(`driver_id.eq.${profile.id},restaurant_id.eq.${profile.id}`)
                 .eq('status', 'accepted');
 
-            console.log();
-
             if (connectionsError) {
                 Alert.alert("Error fetching connections", connectionsError.message);
                 setConnections([]);
@@ -68,35 +64,35 @@ export default function HomeScreen() {
                 setConnections(connectionsData || []);
             }
 
-            // Conditional fetching based on whether a connection is active
-            let deliveriesQuery = supabase.from('deliveries').select('*');
-            let shiftsQuery = supabase.from('shifts').select('*');
-            const connectionIds = connectionsData?.map(conn => conn.id) || [];
-
-            if (profile.active_connection_id) {
-                deliveriesQuery = deliveriesQuery.eq('connection_id', profile.active_connection_id);
-                shiftsQuery = shiftsQuery.eq('connection_id', profile.active_connection_id);
-            } else {
-                if (profile.role === 'driver') {
-                    deliveriesQuery = deliveriesQuery.or(`driver_id.eq.${profile.id},connection_id.in.(${connectionIds})`);
-                    shiftsQuery = shiftsQuery.or(`driver_id.eq.${profile.id},connection_id.in.(${connectionIds})`);
-                } else { // 'restaurant' role
-                    deliveriesQuery = deliveriesQuery.or(`restaurant_id.eq.${profile.id},connection_id.in.(${connectionIds})`);
-                    shiftsQuery = shiftsQuery.or(`restaurant_id.eq.${profile.id},connection_id.in.(${connectionIds})`);
-                }
-
+            const now = new Date();
+            const startOfPeriod = new Date(now);
+            startOfPeriod.setHours(3, 0, 0, 0);
+            if (now.getHours() < 3) {
+                startOfPeriod.setDate(startOfPeriod.getDate() - 1);
             }
+            const todayISO = startOfPeriod.toISOString();
 
-            deliveriesQuery = deliveriesQuery.gte('created_at', today);
-            shiftsQuery = shiftsQuery.gte('created_at', today);
+            // Calculate the end of the business day for the query
+            const endOfPeriod = new Date(startOfPeriod);
+            endOfPeriod.setDate(endOfPeriod.getDate() + 1);
+            const endOfPeriodISO = endOfPeriod.toISOString();
 
-            const [
-                { data: deliveriesData, error: deliveriesError },
-                { data: shiftsData, error: shiftsError },
-            ] = await Promise.all([
-                deliveriesQuery,
-                shiftsQuery,
-            ]);
+            // Fetch all deliveries created since the start of today's period
+            const { data: deliveriesData, error: deliveriesError } = await supabase
+                .from('deliveries')
+                .select('*')
+                .eq(profile.role === 'driver' ? 'driver_id' : 'restaurant_id', profile.id)
+                .gte('created_at', todayISO);
+
+            // Fetch all shifts that overlap with today's business day
+            // A shift overlaps if its end time is after the start of the business day OR it's active
+            // AND its start time is before the end of the business day
+            const { data: shiftsData, error: shiftsError } = await supabase
+                .from('shifts')
+                .select('*')
+                .eq(profile.role === 'driver' ? 'driver_id' : 'restaurant_id', profile.id)
+                .or(`status.eq.active,end_time.gte.${todayISO}`)
+                .lt('start_time', endOfPeriodISO);
 
             if (deliveriesError || shiftsError) {
                 Alert.alert("Error fetching data", deliveriesError?.message || shiftsError?.message);
@@ -109,10 +105,9 @@ export default function HomeScreen() {
 
             setLoading(false);
         };
+
         fetchData();
         setRefreshing(false);
-
-
     }, [profile?.id, profile?.active_connection_id, refreshKey, setDeliveries, setShifts, setConnections]);
 
     if (loading) {
@@ -135,7 +130,7 @@ export default function HomeScreen() {
                     keyExtractor={(item) => item.id}
                     renderItem={({ item }) => <DeliveryItem item={item} onRefresh={triggerRefresh} />}
                     ListHeaderComponent={() => <DeliveryHeader data={DataObject} onRefresh={triggerRefresh} />}
-                    contentContainerStyle={{ paddingBottom: tabBarHeight + 20 }} // Use tabBarHeight + some extra padding
+                    contentContainerStyle={{ paddingBottom: tabBarHeight + 20 }}
                     extraData={deliveries}
                     refreshControl={
                         <RefreshControl
@@ -143,7 +138,6 @@ export default function HomeScreen() {
                             onRefresh={triggerRefresh}
                         />
                     }
-
                 />
                 <View
                     style={{

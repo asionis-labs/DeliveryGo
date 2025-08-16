@@ -1,7 +1,5 @@
-// ConnectionScreen.tsx
-
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { View, StyleSheet, SafeAreaView, ScrollView, Alert, TextInput, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, SafeAreaView, ScrollView, Alert, TextInput, ActivityIndicator, TouchableOpacity, RefreshControl } from 'react-native';
 import { UIText } from '@/components/UIText';
 import { UIButton } from '@/components/UIButton';
 import { useColors } from '@/hooks/useColors';
@@ -54,15 +52,19 @@ export default function ConnectionScreen() {
   const [selectedConnection, setSelectedConnection] = useState<Connection | null>(null);
   const [connectedProfile, setConnectedProfile] = useState<Profile | null>(null);
   const [modalLoading, setModalLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false); // **NEW** State for RefreshControl
   const DEFAULT_DRIVER_ID = '2ca629ba-cf8a-4906-9e13-f54524cf20d9';
   const DEFAULT_RESTAURANT_ID = 'cf61e4f7-082d-4843-96a5-396093049ad1';
 
+  // **UPDATED:** Wrap fetchConnections in useCallback to prevent unnecessary re-renders
   const fetchConnections = useCallback(async () => {
     if (!profile?.id) {
       setLoading(false);
+      setRefreshing(false); // Ensure refreshing is turned off
       return;
     }
     setLoading(true);
+    setRefreshing(true);
 
     const { data, error } = await supabase
       .from('connections')
@@ -78,6 +80,7 @@ export default function ConnectionScreen() {
       setConnectionsInStore(data || []);
     }
     setLoading(false);
+    setRefreshing(false); // **IMPORTANT:** Turn off the refreshing indicator
   }, [profile?.id, setConnections, setConnectionsInStore]);
 
   useEffect(() => {
@@ -302,16 +305,19 @@ export default function ConnectionScreen() {
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: color.primary_bg }]}>
-      <ScrollView style={styles.scrollView}>
+      <ScrollView
+        style={styles.scrollView}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={fetchConnections}
+          />
+        }
+      >
         <View style={styles.contentContainer}>
           <View style={styles.headerContainer}>
             <UIText type="title">Connections</UIText>
-            <UIButton
-              label="Reload"
-              type='tag'
-              onPress={fetchConnections}
-              style={{ backgroundColor: color.btn, paddingHorizontal: 20, paddingVertical: 10 }}
-            />
+            {/* The Reload button has been removed */}
           </View>
           <LineBreak height={20} />
 
@@ -520,6 +526,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+    padding: 20
   },
   headerContainer: {
     flexDirection: 'row',
