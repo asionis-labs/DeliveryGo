@@ -110,7 +110,6 @@ export default function DeliveryHeader({ data, onRefresh }: DeliveryHeaderProps)
         let totalMinutes = 0;
         let firstShiftStartTime = '--:--';
 
-        // Filter shifts by the active connection before calculating
         const filteredShifts = shifts.filter(s => s.connection_id === profile?.active_connection_id || profile?.active_connection_id === null);
 
         const now = new Date();

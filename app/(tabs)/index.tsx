@@ -18,20 +18,27 @@ export default function HomeScreen() {
     const [refreshing, setRefreshing] = useState(false);
 
     const { deliveries, setDeliveries, profile, connections, setConnections, shifts, setShifts } = dataStore();
+    const activeConnection = connections.find(c => c.id === profile?.active_connection_id);
 
+    // FIX: Pass the sorted/filtered deliveries to the DataObject
+    const sortedDeliveries = useMemo(() => {
+        if (!deliveries) return [];
+
+        const activeConnectionId = activeConnection?.id;
+        const filtered = deliveries.filter(delivery => delivery.connection_id === activeConnectionId);
+
+        return [...filtered].sort((a, b) => {
+            return new Date(b.start_time).getTime() - new Date(a.start_time).getTime();
+        });
+    }, [deliveries, activeConnection]);
+
+    // FIX: Update DataObject to use the sortedDeliveries list
     const DataObject = {
-        deliveries: deliveries,
+        deliveries: sortedDeliveries,
         connections: connections,
         shifts: shifts,
         profile: profile
     };
-
-    const sortedDeliveries = useMemo(() => {
-        if (!deliveries) return [];
-        return [...deliveries].sort((a, b) => {
-            return new Date(b.start_time).getTime() - new Date(a.start_time).getTime();
-        });
-    }, [deliveries]);
 
     const triggerRefresh = () => {
         setRefreshing(true);
@@ -85,8 +92,6 @@ export default function HomeScreen() {
                 .gte('created_at', todayISO);
 
             // Fetch all shifts that overlap with today's business day
-            // A shift overlaps if its end time is after the start of the business day OR it's active
-            // AND its start time is before the end of the business day
             const { data: shiftsData, error: shiftsError } = await supabase
                 .from('shifts')
                 .select('*')

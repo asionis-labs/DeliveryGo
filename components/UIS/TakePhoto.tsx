@@ -57,7 +57,22 @@ export default function TakePhoto() {
 
     const deliveryCount = useMemo(() => {
         if (!deliveries || !activeConnection) return 0;
-        return deliveries.filter((delivery) => delivery.connection_id === activeConnection.id).length;
+
+        // **FIXED LOGIC:** Calculate the start of the current business day
+        const now = new Date();
+        const startOfPeriod = new Date(now);
+        startOfPeriod.setHours(3, 0, 0, 0); // Start of business day is 3 AM
+        if (now.getHours() < 3) {
+            startOfPeriod.setDate(startOfPeriod.getDate() - 1);
+        }
+        const startOfPeriodISO = startOfPeriod.toISOString();
+
+        // Filter deliveries by connection_id and created_at date
+        return deliveries.filter(
+            (delivery) =>
+                delivery.connection_id === activeConnection.id &&
+                delivery.created_at >= startOfPeriodISO
+        ).length;
     }, [deliveries, activeConnection]);
 
 
