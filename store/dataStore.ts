@@ -13,7 +13,9 @@ export type Connection = {
     driver_name: string,
     restaurant_postcode: string
     subscription_end?: string,
-    created_at?: string
+    created_at?: string,
+    local_rate?: number;
+
     // ... add other fields
 };
 
@@ -61,7 +63,9 @@ export type UserProfile = {
     mileage_rate?: number;
     active_connection_id?: string;
     active_connection_name?: string;
-    subscription_end?: string
+    subscription_end?: string,
+    local_rate?: number;
+
 };
 
 type AppDataStore = {

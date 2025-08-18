@@ -10,6 +10,7 @@ import { UIButton } from '@/components/UIButton';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { UIInput } from '@/components/UIInput';
+import { Line } from 'react-native-svg';
 
 // Define the Connection type
 type Connection = {
@@ -24,6 +25,7 @@ type Connection = {
     restaurant_name: string;
     restaurant_postcode: string;
     subscription_end?: string;
+    local_rate?: number;
 };
 
 
@@ -40,8 +42,9 @@ interface FormState {
     town: string;
     postcode: string;
     country: string;
-    hourly_rate: number;
-    mileage_rate: number;
+    hourly_rate: any;
+    mileage_rate: any;
+    local_rate: any
 }
 
 export default function OnboardingScreen() {
@@ -61,8 +64,10 @@ export default function OnboardingScreen() {
         town: '',
         postcode: '',
         country: '',
-        hourly_rate: 12.21,
+        hourly_rate: "",
         mileage_rate: 0.7,
+        local_rate: ""
+
     });
 
     useEffect(() => {
@@ -77,7 +82,8 @@ export default function OnboardingScreen() {
                 postcode: profile.postcode || '',
                 country: profile.country || 'United Kingdom',
                 hourly_rate: profile.hourly_rate || 12.21,
-                mileage_rate: profile.mileage_rate || 0.9
+                mileage_rate: profile.mileage_rate || 0.7,
+                local_rate: profile.mileage_rate || 0.7
             });
         }
     }, [profile]);
@@ -145,7 +151,8 @@ export default function OnboardingScreen() {
                 country: form.country,
                 hourly_rate: form.hourly_rate,
                 mileage_rate: form.mileage_rate,
-                subscription_end: subscriptionEndDate, // Correctly sets the trial end date or null
+                local_rate: form.local_rate,
+                subscription_end: subscriptionEndDate,
             }).select().single();
 
             if (profileError) {
@@ -186,7 +193,8 @@ export default function OnboardingScreen() {
                     driver_name: 'Demo_Driver',
                     restaurant_name: newProfile.name,
                     restaurant_postcode: DEFAULT_RESTAURANT_POSTCODE,
-                    subscription_end: subscriptionEndDate // **CORRECTED:** Pass the subscription date to the connection table.
+                    subscription_end: subscriptionEndDate,
+                    local_rate: newProfile.local_rate || 0.75
                 }).select().single();
 
                 if (connectionError) throw connectionError;
@@ -236,12 +244,14 @@ export default function OnboardingScreen() {
                 <ScrollView contentContainerStyle={{ padding: 20, flexGrow: 1 }}>
 
                     <LineBreak height={Platform.OS === "android" ? 50 : 0} />
-                    <UIText type='title'>Complete your profile</UIText>
+                    <UIText type='title'>Create your profile</UIText>
                     <LineBreak height={10} />
 
-                    <UIText type='base'>Please enter all details to create your profile</UIText>
-
                     <LineBreak height={30} />
+
+                    <UIText> Are You Driver or Owner?</UIText>
+                    <LineBreak />
+
 
                     <View style={{ flexDirection: 'row', gap: 15, marginBottom: 20 }}>
                         {['driver', 'restaurant'].map((role) => (
@@ -254,7 +264,7 @@ export default function OnboardingScreen() {
                                     paddingVertical: 15,
                                     paddingHorizontal: 20,
                                     borderRadius: 8,
-                                    backgroundColor: form.role === role ? color.success : color.white,
+                                    backgroundColor: form.role === role ? color.error : color.white,
                                     flex: 1
                                 }}
                                 textStyle={{
@@ -264,33 +274,86 @@ export default function OnboardingScreen() {
                             />
                         ))}
                     </View>
-                    <UIText> You are Registering as a {form.role} </UIText>
-                    <LineBreak />
 
-                    <UIInput placeholder={form.role === 'restaurant' ? 'Restaurant Name' : 'Full Name'}
+                    <UIText type='base'> {form.role === 'restaurant' ? 'Restaurant Name' : 'Full Name'} </UIText>
+                    <LineBreak height={5} />
+
+
+                    <UIInput placeholder={form.role === 'restaurant' ? 'Pizza House' : 'Muhammad Khalid '}
                         value={form.name} onChangeText={(v) => handleChange('name', v)} iconName="user-tie" />
-                    <UIInput placeholder="Email" value={form.email} onChangeText={(v) => handleChange('email', v)} iconName="mail-bulk" keyboardType="email-address" />
+
+
+                    <UIText type='base'> Email Address </UIText>
+                    <LineBreak height={5} />
+                    <UIInput placeholder="example@gmail.com" value={form.email} onChangeText={(v) => handleChange('email', v)} iconName="mail-bulk" keyboardType="email-address" />
+
+                    <UIText type='base'> Payment Per Hour </UIText>
+                    <LineBreak height={5} />
                     <UIInput
-                        placeholder="Hourly Rate"
+                        placeholder="£12.21"
                         value={String(form.hourly_rate)}
                         onChangeText={(v) => handleChange('hourly_rate', v)}
                         iconName="pound-sign"
                         keyboardType="numeric"
                     />
-                    <UIInput
-                        placeholder="Mileage Rate"
-                        value={String(form.mileage_rate)}
-                        onChangeText={(v) => handleChange('mileage_rate', v)}
-                        iconName="car"
-                        keyboardType="numeric"
-                    />
-                    <UIInput placeholder="Street Address" value={form.street} onChangeText={(v) => handleChange('street', v)} iconName="road" />
-                    <UIInput placeholder="Town" value={form.town} onChangeText={(v) => handleChange('town', v)} iconName="city" />
-                    <UIInput placeholder="Postcode" value={form.postcode} onChangeText={(v) => handleChange('postcode', v)} iconName="mail-bulk" />
+
+                    {form.role === 'restaurant' && (
+
+                        <View>
+
+                            <UIText type='base'> Local delivery rate under 1 mile </UIText>
+                            <LineBreak height={5} />
+                            <UIInput
+                                placeholder="£0.9"
+                                value={String(form.local_rate || '')}
+                                onChangeText={(v) => handleChange('local_rate', v)}
+                                iconName="money-bill-wave"
+                                keyboardType="numeric"
+                            />
+
+                        </View>
+
+                    )}
+
+
+
+
+                    {form.role === 'restaurant' && (
+                        <View>
+                            <UIText type='base'>Per Money Per Mileage </UIText>
+                            <UIText type='base' style={{ fontSize: 14, color: color.text_light }}>
+                                For example driving 4 miles: £{(form.mileage_rate * 2).toFixed(2)} and 8 miles: £{(form.mileage_rate * 4).toFixed(2)}
+                            </UIText>
+                            <LineBreak height={5} />
+                            <UIInput
+                                placeholder="£0.75"
+                                value={String(form.mileage_rate)}
+                                onChangeText={(v) => handleChange('mileage_rate', v)}
+                                iconName="car"
+                                keyboardType="numeric"
+                            />
+                        </View>
+                    )}
+
+
+
+
+                    <UIText type='base'> Street Address </UIText>
+                    <LineBreak height={5} />
+                    <UIInput placeholder="99 Kenton Gardens" value={form.street} onChangeText={(v) => handleChange('street', v)} iconName="road" />
+
+                    <UIText type='base'> City or Twon </UIText>
+                    <LineBreak height={5} />
+                    <UIInput placeholder="Saint Albans" value={form.town} onChangeText={(v) => handleChange('town', v)} iconName="city" />
+
+
+                    <UIText type='base'> Post Code </UIText>
+                    <LineBreak height={5} />
+                    <UIInput placeholder="AL1 1JS" value={form.postcode} onChangeText={(v) => handleChange('postcode', v)} iconName="mail-bulk" />
                     <LineBreak />
                     <View style={{ marginTop: 20 }}>
 
-                        <UIButton label={loading ? "Submitting..." : "Submit Profile"}
+                        <UIButton label={loading ? "Submitting..." : "Create Your Profile"}
                             onPress={submitProfile}
                             disabled={loading}
                         />
@@ -298,6 +361,8 @@ export default function OnboardingScreen() {
                         {loading && (
                             <ActivityIndicator size="small" style={{ marginTop: 10 }} />
                         )}
+
+                        <LineBreak />
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>

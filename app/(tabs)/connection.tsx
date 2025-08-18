@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { View, StyleSheet, SafeAreaView, ScrollView, Alert, TextInput, ActivityIndicator, TouchableOpacity, RefreshControl } from 'react-native';
+import { View, StyleSheet, SafeAreaView, ScrollView, Alert, TextInput, ActivityIndicator, TouchableOpacity, RefreshControl, Platform } from 'react-native';
 import { UIText } from '@/components/UIText';
 import { UIButton } from '@/components/UIButton';
 import { useColors } from '@/hooks/useColors';
@@ -314,13 +314,12 @@ export default function ConnectionScreen() {
           />
         }
       >
-        <View style={styles.contentContainer}>
+        <View style={[styles.contentContainer, { marginTop: Platform.OS === "android" ? 25 : 0 }]}>
+
           <View style={styles.headerContainer}>
             <UIText type="title">Connections</UIText>
-            {/* The Reload button has been removed */}
+            {/* The Reload buttoCn has been removed */}
           </View>
-          <LineBreak height={20} />
-
           {/* --- Search Section --- */}
           <View style={[styles.card, { backgroundColor: color.white }]}>
             <UIText type="semiBold" style={{ marginBottom: 10 }}>Find New Connections</UIText>
@@ -553,7 +552,7 @@ const styles = StyleSheet.create({
   card: {
     padding: 15,
     borderRadius: 15,
-    marginTop: 10,
+    // marginTop: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 8,

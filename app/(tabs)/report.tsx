@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { SafeAreaView, View, ActivityIndicator, ScrollView, RefreshControl, Dimensions, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { SafeAreaView, View, ActivityIndicator, ScrollView, RefreshControl, Dimensions, TouchableOpacity, StyleSheet, Alert, Platform } from 'react-native';
 import { dataStore } from '@/store/dataStore';
 import { supabase } from '@/lib/supabase';
 import { TabView, TabBar } from 'react-native-tab-view';
@@ -9,6 +9,7 @@ import { UIModal } from '@/components/UIModal';
 import { UIText } from '@/components/UIText';
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { Svg, Circle, Text as SvgText } from 'react-native-svg';
+import LineBreak from '@/components/LineBreak';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -606,6 +607,8 @@ export default function ReportScreen() {
 
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: color.primary_bg }}>
+            <LineBreak height={Platform.OS === "android" ? 25 : 0} />
+
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: color.border, }}>
                 <UIText type="title" style={{ color: color.text }}>Reports</UIText>
                 <TouchableOpacity

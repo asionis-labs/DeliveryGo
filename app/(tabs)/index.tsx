@@ -1,4 +1,4 @@
-import { SafeAreaView, StyleSheet, View, StatusBar, FlatList, Alert, ActivityIndicator, RefreshControl } from 'react-native';
+import { SafeAreaView, StyleSheet, View, StatusBar, FlatList, Alert, ActivityIndicator, RefreshControl, Platform } from 'react-native';
 import React, { useEffect, useMemo, useState } from "react";
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 
@@ -147,7 +147,7 @@ export default function HomeScreen() {
                 <View
                     style={{
                         position: 'absolute',
-                        bottom: 8,
+                        bottom: Platform.OS === 'ios' ? 8 : -40,
                         left: 0,
                         right: 0,
                         paddingHorizontal: 20,
