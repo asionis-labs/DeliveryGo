@@ -94,8 +94,10 @@ export default function TakePhoto() {
 
         const { distance, destination_address } = distanceAndAddress;
 
-        const demoEarning = distance <= 1 ? activeConnection.flat_rate : distance * activeConnection.mileage_rate;
+
+        const demoEarning = distance <= 1 ? activeConnection.local_rate : distance * activeConnection.mileage_rate;
         const earning = parseFloat(demoEarning.toFixed(2));
+
 
         console.log("Logs for Distance", distanceAndAddress);
 
