@@ -60,7 +60,7 @@ export default function Profile() {
 
     const handleUpgrade = () => {
         if (profile?.id) {
-            const upgradeUrl = `https://www.deliverygo.co.uk/upgrades?id=${profile.id}`;
+            const upgradeUrl = `https://www.deliverygo.co.uk/billing?id=${profile.id}`;
             Linking.openURL(upgradeUrl).catch(err => {
                 Alert.alert("Error", "Failed to open the upgrade link. Please try again later.");
                 console.error("Failed to open URL:", err);
@@ -168,36 +168,40 @@ export default function Profile() {
                     <Text>Loading profile...</Text>
                 )}
 
-                <View style={profileStyles.card}>
-                    <UIText type="base" style={profileStyles.sectionHeading}>Subscription Status</UIText>
-                    <UIText
-                        type="base"
-                        style={[
-                            profileStyles.cardText,
-                            { color: subscriptionStatus.textColor, fontWeight: 'bold' }
-                        ]}
-                    >
-                        {subscriptionStatus.text}
-                    </UIText>
-                    <UIButton label="Manage Subscription" onPress={handleUpgrade} type="normal" style={profileStyles.upgradeButton} />
+                {profile?.role === 'restaurant' && (
+                    <View style={profileStyles.card}>
+                        <UIText type="base" style={profileStyles.sectionHeading}>Subscription Status</UIText>
+                        <UIText
+                            type="base"
+                            style={[
+                                profileStyles.cardText,
+                                { color: subscriptionStatus.textColor, fontWeight: 'bold' }
+                            ]}
+                        >
+                            {subscriptionStatus.text}
+                        </UIText>
+                        <UIButton label="Manage Subscription" onPress={handleUpgrade} type="normal" style={profileStyles.upgradeButton} />
 
-                    <LineBreak height={20} />
+                        <LineBreak height={20} />
 
-                    <UIText type="base" style={profileStyles.sectionHeading}>Support</UIText>
-                    <View style={profileStyles.supportRow}>
-                        <FontAwesome name="envelope" size={20} color={color.text} />
-                        <TouchableOpacity onPress={handleSupportEmail}>
-                            <UIText type="base" style={profileStyles.supportText}>support@deliverygo.co.uk</UIText>
-                        </TouchableOpacity>
+                        <UIText type="base" style={profileStyles.sectionHeading}>Support</UIText>
+                        <View style={profileStyles.supportRow}>
+                            <FontAwesome name="envelope" size={20} color={color.text} />
+                            <TouchableOpacity onPress={handleSupportEmail}>
+                                <UIText type="base" style={profileStyles.supportText}>support@deliverygo.co.uk</UIText>
+                            </TouchableOpacity>
+                        </View>
+                        <LineBreak height={5} />
+                        <View style={profileStyles.supportRow}>
+                            <FontAwesome name="phone" size={20} color={color.text} />
+                            <TouchableOpacity onPress={handleSupportCall}>
+                                <UIText type="base" style={profileStyles.supportText}>+44 7707 771599</UIText>
+                            </TouchableOpacity>
+                        </View>
                     </View>
-                    <LineBreak height={5} />
-                    <View style={profileStyles.supportRow}>
-                        <FontAwesome name="phone" size={20} color={color.text} />
-                        <TouchableOpacity onPress={handleSupportCall}>
-                            <UIText type="base" style={profileStyles.supportText}>+44 7707 771599</UIText>
-                        </TouchableOpacity>
-                    </View>
-                </View>
+                )}
+
+
 
                 <View style={profileStyles.actionButtonsContainer}>
                     <UIButton label="Delete My Account" onPress={handleDeleteAccount} type="normal" style={{ backgroundColor: color.error, flex: 2 }} />

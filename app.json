@@ -26,10 +26,10 @@
         "applinks:deliverygo.co.uk"
       ],
       "infoPlist": {
-        "NSCameraUsageDescription": "DeliveryGo uses the camera to scan and upload photos.",
-        "NSPhotoLibraryUsageDescription": "DeliveryGo needs photo access to attach images to deliveries.",
-        "NSPhotoLibraryAddUsageDescription": "Allow DeliveryGo to save exported images.",
-        "NSLocationWhenInUseUsageDescription": "DeliveryGo uses your location for delivery routing and tracking.",
+        "NSCameraUsageDescription": "DeliveryGo uses the camera to capture proof-of-delivery photos (e.g., package at the door or receipt).",
+        "NSPhotoLibraryUsageDescription": "DeliveryGo lets you attach delivery-related photos from your library (e.g., receipts or package photos).",
+        "NSPhotoLibraryAddUsageDescription": "DeliveryGo can save your captured proof-of-delivery photos to your library if you choose to export them.",
+        "NSLocationWhenInUseUsageDescription": "DeliveryGo uses your location during active deliveries for routing and live driver tracking.",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
@@ -87,7 +87,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "The app accesses your photos to let you share them with your friends."
+          "photosPermission": "Allow DeliveryGo to access your photos to attach delivery proof (e.g., receipts or package photos)."
         }
       ]
     ],
