@@ -88,13 +88,13 @@ export default function DeliveryItem({ item, onRefresh }: DeliveryItemProps) {
             >
                 <UIText type="semiBold">{item.address}</UIText>
                 <View style={{ flexDirection: "row", rowGap: 0, columnGap: 15, flexWrap: "wrap" }}>
-                    <UIText type="base" style={{ color: color.btn, fontSize: 16 }}>£{item.earning?.toFixed(2) || '0.00'}</UIText>
-                    <UIText type="base" style={{ fontSize: 16, color: color.text_light }}>{item.distance_miles} miles</UIText>
-                    <UIText type="base" style={{ fontSize: 16, color: color.text_light }}>{item.verify_code ? `Code: ${item.verify_code}` : null}</UIText>
+                    <UIText type="base" style={{ color: color.btn, fontSize: Platform.OS === 'ios' ? 16 : 14 }}>£{item.earning?.toFixed(2) || '0.00'}</UIText>
+                    <UIText type="base" style={{ fontSize: Platform.OS === 'ios' ? 16 : 14, color: color.text_light }}>{item.distance_miles} miles</UIText>
+                    <UIText type="base" style={{ fontSize: Platform.OS === 'ios' ? 16 : 14, color: color.text_light }}>{item.verify_code ? `Code: ${item.verify_code}` : null}</UIText>
                 </View>
                 <View style={{ flexDirection: "row", rowGap: 0, columnGap: 15, flexWrap: "wrap" }}>
-                    <UIText type="base" style={{ fontSize: 16, color: statusColor }}>{item.status.charAt(0).toUpperCase() + item.status.slice(1)}</UIText>
-                    <UIText type="base" style={{ fontSize: 16, color: color.text_light }}>Phone: {item.customer_phone}</UIText>
+                    <UIText type="base" style={{ fontSize: Platform.OS === 'ios' ? 16 : 14, color: statusColor }}>{item.status.charAt(0).toUpperCase() + item.status.slice(1)}</UIText>
+                    <UIText type="base" style={{ fontSize: Platform.OS === 'ios' ? 16 : 14, color: color.text_light }}>Phone: {item.customer_phone}</UIText>
                 </View>
             </TouchableOpacity>
 
