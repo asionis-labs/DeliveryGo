@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "deliverygo-uk",
+  "private_key_id": "21215d381ba1acc72804a4d86ba2f46ebfdf5589",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC0ksABfVdRQlu4\nJJelZKbHHhfoddY6qkbEoO9FToaNDVC67THp9CiHFGSjMoFqsIZxv8Ea413WHb+6\nymsFaOHzkTOBZje8nzfDI1SKp/fQpGe4Z86iqhsUxi2FkDmlRYSRsH3CknxCujGE\nuF14+bd4Rs4xHUm6Yi22fvPW1hGoIhmaDyBTkqzxCwRG3Fc5GtOKcaV+YIVYSnH0\n1QNi/xemzWkWQ0Y0dv8t5YaFr+58PVTbbQs03JxH+7NFioQ3BbcLnFxeZ/beD0vW\n96/BBhWluEf/3+eGkw4ekbtNkhNZl6g5Ovgdx2dwns/QWhKG1nWwB0kE8PaZAW2Z\nYf6nbil9AgMBAAECggEAHOtj1Nk+IsV96v/xSYvVKg6nxZMZvEuJCfS8XV02L2Dy\njP1wAQgZdYjOlVSBZZTf81fClYvUe3ZIPqIsgbFKfrfCh/bW9l6Jj7cY0xwTlFbA\nRchaT7Luo2UZ5Uoz8UQw9yRM/9x2CjnHtHnSfo1/1MOCQltuc2tF5vRuGPov2b1W\n2sCa6Id4VERAGezjU70JaYR7BdM00lO2jFHZqtpnTfJpujdgFUvYSaEGtoukB4n8\nj+133dD4aZCSPX4QFaj9el9qAZK+OoLUHqjbsEY1WxTt5cks9yrts1Egvu5p3zZB\n9aW/ZuMn/bliZBw9iE2yFGXCU+BEvuc4wT46qjRAAQKBgQD2UkAH8m1mPTHb7RGe\njxVGxkns+8X0bExiL6qNhFYbkQuK75FU900ucKAZcBpU+CRxfrIOcCmDMV0gxN8b\nsozmqa07aby6HHZoVQh/ipGZWecWMVIO2z9Kj+F/AnfrOwGx7726MZJReL+SaDpt\nk3VPzVTp+x3awDIEav/6dbaJ8QKBgQC7qyOj3S9mznfhXvBAdCi9xvAyA9FUsHeZ\n6myn5sGEd3i0ei4tztLZlNlR+QoGUQYOb/967qFilmZ6vrYBAxRx3IvmZSNv8fYw\nvVM6hsyLGA3ahWfs9Bw7A8pIY7VCUuAUb4uOyQXkxqrxwrGONKqmnW6x7OIeNWV3\nzdKBpaVsTQKBgQCAvXpj7OwKzJ8bkCtuUOBQ7mBC8VCEMHo3sywT7P/IRqXextmR\nq/N1+z1iLjpFALCjdRGBBFReElXXQ65MXqTQBgzZiakvKKMmYpMffgAdQ2TJL5vw\n0dyhjtPPuy2MD3oSUvg5saEE3fRahAlNrg1ZWTsxU6NF6r/5mScS86UlMQKBgQCW\n3EVjNawkPbd60UHa3kXeAO0Xl6AQL2eFsEA2XLaV0SCUHF/A7TDsPc7RKZxYZYuz\n0W6TmP7c7MBmzaYrfBlUSpGf3Q+2rtBUb+1W8AO/kM+aKYHYpoeHHU3gEV8leM+v\nPdf3KTv2o4nJnNP01/uSwp24pA9Fb3Eo9KjTFaC8RQKBgEgdfhcfLRjbj7HfwCke\nMMUCMNhRrKSlxneLz17HtDF8ZheyQVlrcjdnwBO83fZED7qk7QR/clV0kjkrsUeN\nOM/bt+aT6tGoXPAcQtdh2QuWgXwPCiMvgLYxkWBhGJQaE1/qz5dQtabEvcx8IcGm\nlMqYxMyYzYeIPgzHIunssSgC\n-----END PRIVATE KEY-----\n",
+  "client_email": "easbuild@deliverygo-uk.iam.gserviceaccount.com",
+  "client_id": "101527102907767274330",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/easbuild%40deliverygo-uk.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
