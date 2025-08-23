@@ -2,7 +2,7 @@
   "expo": {
     "name": "DeliveryGo",
     "slug": "DeliveryGo",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "extra": {
       "supabaseUrl": "https://qcaxwxoxkdgnhjyfzsqy.supabase.co",
       "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjYXh3eG94a2RnbmhqeWZ6c3F5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0MDE3MzQsImV4cCI6MjA2OTk3NzczNH0.MVGR1bSyDwWLhQkM_nr-mf-lvvsmQcyrQmiqcfJ94y8",
