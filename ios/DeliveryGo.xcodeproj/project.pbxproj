@@ -9,27 +9,27 @@
 /* Begin PBXBuildFile section */
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
-		A3D49BCFA8F2A9D73E02CD0C /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9734025A852EBDC33F012550 /* ExpoModulesProvider.swift */; };
+		8A84EB21E49BC12C5D34AA5A /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = BB99727F6D370E0F71462BA0 /* PrivacyInfo.xcprivacy */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
-		C6B11B08E7ACE3969427C4AF /* libPods-DeliveryGo.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 3A7615B1ADA91015C6D08AD8 /* libPods-DeliveryGo.a */; };
+		D32B051F3A0B5C0E5D5C1D7A /* libPods-DeliveryGo.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 4E77711235B152C7645CB78B /* libPods-DeliveryGo.a */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
-		FD50F9212510BEBDBFD47D81 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 7F4E5C3397E2BFE52EAC436C /* PrivacyInfo.xcprivacy */; };
+		F462AB24CF7765C1B695B144 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85E600EF5C4FD6B84ACC82EB /* ExpoModulesProvider.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		13B07F961A680F5B00A75B9A /* DeliveryGo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DeliveryGo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = DeliveryGo/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = DeliveryGo/Info.plist; sourceTree = "<group>"; };
-		3A7615B1ADA91015C6D08AD8 /* libPods-DeliveryGo.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-DeliveryGo.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		7F4E5C3397E2BFE52EAC436C /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = DeliveryGo/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
-		9734025A852EBDC33F012550 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-DeliveryGo/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
+		4E77711235B152C7645CB78B /* libPods-DeliveryGo.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-DeliveryGo.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		85E600EF5C4FD6B84ACC82EB /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-DeliveryGo/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
+		89CF7ABA753448A2B66A7548 /* Pods-DeliveryGo.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-DeliveryGo.debug.xcconfig"; path = "Target Support Files/Pods-DeliveryGo/Pods-DeliveryGo.debug.xcconfig"; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = DeliveryGo/SplashScreen.storyboard; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
-		CBA85E2071D6D5C994DFF610 /* Pods-DeliveryGo.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-DeliveryGo.release.xcconfig"; path = "Target Support Files/Pods-DeliveryGo/Pods-DeliveryGo.release.xcconfig"; sourceTree = "<group>"; };
+		BB99727F6D370E0F71462BA0 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = DeliveryGo/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		BD2A4F931403CC9EB31822CD /* Pods-DeliveryGo.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-DeliveryGo.release.xcconfig"; path = "Target Support Files/Pods-DeliveryGo/Pods-DeliveryGo.release.xcconfig"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = DeliveryGo/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* DeliveryGo-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "DeliveryGo-Bridging-Header.h"; path = "DeliveryGo/DeliveryGo-Bridging-Header.h"; sourceTree = "<group>"; };
-		F9158A5FC7CC78476588B4DF /* Pods-DeliveryGo.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-DeliveryGo.debug.xcconfig"; path = "Target Support Files/Pods-DeliveryGo/Pods-DeliveryGo.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -37,7 +37,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C6B11B08E7ACE3969427C4AF /* libPods-DeliveryGo.a in Frameworks */,
+				D32B051F3A0B5C0E5D5C1D7A /* libPods-DeliveryGo.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -53,15 +53,7 @@
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
-				7F4E5C3397E2BFE52EAC436C /* PrivacyInfo.xcprivacy */,
-			);
-			name = DeliveryGo;
-			sourceTree = "<group>";
-		};
-		2B83927719E8D5A9D4D5AF0A /* DeliveryGo */ = {
-			isa = PBXGroup;
-			children = (
-				9734025A852EBDC33F012550 /* ExpoModulesProvider.swift */,
+				BB99727F6D370E0F71462BA0 /* PrivacyInfo.xcprivacy */,
 			);
 			name = DeliveryGo;
 			sourceTree = "<group>";
@@ -70,15 +62,15 @@
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				3A7615B1ADA91015C6D08AD8 /* libPods-DeliveryGo.a */,
+				4E77711235B152C7645CB78B /* libPods-DeliveryGo.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		50C118D95F03CE0E980954F7 /* ExpoModulesProviders */ = {
+		61794A633532B861DCF948CF /* ExpoModulesProviders */ = {
 			isa = PBXGroup;
 			children = (
-				2B83927719E8D5A9D4D5AF0A /* DeliveryGo */,
+				CD36F8C25480BB12B13E85E5 /* DeliveryGo */,
 			);
 			name = ExpoModulesProviders;
 			sourceTree = "<group>";
@@ -97,8 +89,8 @@
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
-				F8263FFA98C6FA358F97DD31 /* Pods */,
-				50C118D95F03CE0E980954F7 /* ExpoModulesProviders */,
+				9E6931894A2D483BAD2A718F /* Pods */,
+				61794A633532B861DCF948CF /* ExpoModulesProviders */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -113,6 +105,16 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		9E6931894A2D483BAD2A718F /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				89CF7ABA753448A2B66A7548 /* Pods-DeliveryGo.debug.xcconfig */,
+				BD2A4F931403CC9EB31822CD /* Pods-DeliveryGo.release.xcconfig */,
+			);
+			name = Pods;
+			path = Pods;
+			sourceTree = "<group>";
+		};
 		BB2F792B24A3F905000567C9 /* Supporting */ = {
 			isa = PBXGroup;
 			children = (
@@ -122,14 +124,12 @@
 			path = DeliveryGo/Supporting;
 			sourceTree = "<group>";
 		};
-		F8263FFA98C6FA358F97DD31 /* Pods */ = {
+		CD36F8C25480BB12B13E85E5 /* DeliveryGo */ = {
 			isa = PBXGroup;
 			children = (
-				F9158A5FC7CC78476588B4DF /* Pods-DeliveryGo.debug.xcconfig */,
-				CBA85E2071D6D5C994DFF610 /* Pods-DeliveryGo.release.xcconfig */,
+				85E600EF5C4FD6B84ACC82EB /* ExpoModulesProvider.swift */,
 			);
-			name = Pods;
-			path = Pods;
+			name = DeliveryGo;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -140,13 +140,13 @@
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "DeliveryGo" */;
 			buildPhases = (
 				08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */,
-				EA4E04F0311F3F177A395C9E /* [Expo] Configure project */,
+				D466671278FF6A40CE989E4C /* [Expo] Configure project */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
-				19F7EF88A6833F0539BFA699 /* [CP] Embed Pods Frameworks */,
+				2E5BD22BD1EB5A3ADED0A8DA /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -196,7 +196,7 @@
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
-				FD50F9212510BEBDBFD47D81 /* PrivacyInfo.xcprivacy in Resources */,
+				8A84EB21E49BC12C5D34AA5A /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -240,7 +240,7 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		19F7EF88A6833F0539BFA699 /* [CP] Embed Pods Frameworks */ = {
+		2E5BD22BD1EB5A3ADED0A8DA /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -302,7 +302,7 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-DeliveryGo/Pods-DeliveryGo-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		EA4E04F0311F3F177A395C9E /* [Expo] Configure project */ = {
+		D466671278FF6A40CE989E4C /* [Expo] Configure project */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
@@ -329,7 +329,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
-				A3D49BCFA8F2A9D73E02CD0C /* ExpoModulesProvider.swift in Sources */,
+				F462AB24CF7765C1B695B144 /* ExpoModulesProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -338,7 +338,7 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = F9158A5FC7CC78476588B4DF /* Pods-DeliveryGo.debug.xcconfig */;
+			baseConfigurationReference = 89CF7ABA753448A2B66A7548 /* Pods-DeliveryGo.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
@@ -374,7 +374,7 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = CBA85E2071D6D5C994DFF610 /* Pods-DeliveryGo.release.xcconfig */;
+			baseConfigurationReference = BD2A4F931403CC9EB31822CD /* Pods-DeliveryGo.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;

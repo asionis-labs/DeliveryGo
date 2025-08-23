@@ -26,11 +26,15 @@ interface DeliveryItemProps {
         restaurant_id: string;
         connection_id: string | null;
         shift_id: string | null;
+        driverName?: string
+    };
+    profile: {
+        role: 'driver' | 'restaurant';
     };
     onRefresh: () => void;
 }
 
-export default function DeliveryItem({ item, onRefresh }: DeliveryItemProps) {
+export default function DeliveryItem({ item, onRefresh, profile }: DeliveryItemProps) {
 
     const [modalVisible, setModalVisible] = useState(false);
     const color = useColors();
@@ -87,14 +91,19 @@ export default function DeliveryItem({ item, onRefresh }: DeliveryItemProps) {
                 onPress={() => setModalVisible(true)}
             >
                 <UIText type="semiBold">{item.address}</UIText>
-                <View style={{ flexDirection: "row", rowGap: 0, columnGap: 15, flexWrap: "wrap" }}>
+                <View style={{ flexDirection: "row", rowGap: 0, columnGap: 10, flexWrap: "wrap" }}>
                     <UIText type="base" style={{ color: color.btn, fontSize: Platform.OS === 'ios' ? 16 : 14 }}>£{item.earning?.toFixed(2) || '0.00'}</UIText>
                     <UIText type="base" style={{ fontSize: Platform.OS === 'ios' ? 16 : 14, color: color.text_light }}>{item.distance_miles} miles</UIText>
-                    <UIText type="base" style={{ fontSize: Platform.OS === 'ios' ? 16 : 14, color: color.text_light }}>{item.verify_code ? `Code: ${item.verify_code}` : null}</UIText>
+                    <UIText type="base" style={{ fontSize: Platform.OS === 'ios' ? 15 : 14, color: color.text_light }}>{item.verify_code ? `Code: ${item.verify_code}` : null}</UIText>
                 </View>
-                <View style={{ flexDirection: "row", rowGap: 0, columnGap: 15, flexWrap: "wrap" }}>
+                <View style={{ flexDirection: "row", rowGap: 0, columnGap: 10, flexWrap: "wrap" }}>
                     <UIText type="base" style={{ fontSize: Platform.OS === 'ios' ? 16 : 14, color: statusColor }}>{item.status.charAt(0).toUpperCase() + item.status.slice(1)}</UIText>
-                    <UIText type="base" style={{ fontSize: Platform.OS === 'ios' ? 16 : 14, color: color.text_light }}>Phone: {item.customer_phone}</UIText>
+
+                    {profile.role === 'restaurant' ? (
+                        <UIText type="base" style={{ fontSize: Platform.OS === 'ios' ? 16 : 14, color: color.text_light }}>Driver: {item.driverName}</UIText>
+                    ) : (
+                        <UIText type="base" style={{ fontSize: Platform.OS === 'ios' ? 16 : 14, color: color.text_light }}>Phone: {item.customer_phone}</UIText>
+                    )}
                 </View>
             </TouchableOpacity>
 

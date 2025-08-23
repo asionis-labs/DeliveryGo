@@ -45,6 +45,7 @@ export default function TakePhoto() {
     const { profile, deliveries, connections, shifts, setDeliveries } = dataStore();
     const GEMINI_API = Constants.expoConfig.extra.gemini_api;
     const Google_API = Constants.expoConfig.extra.google_api;
+    const OPENAI_API_KEY = Constants.expoConfig.extra.openai_api;
     const activeConnection = connections.find(c => c.id === profile?.active_connection_id);
 
 
@@ -176,59 +177,70 @@ export default function TakePhoto() {
             return;
         }
 
+
+
         try {
             const base64Data = result.assets[0].base64;
             const mimeType = 'image/jpeg';
 
-            const response = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API}`,
-                {
+            const model = "gemini"
+            let response;
+            let rawJsonText = "";
+
+            const prompt = `You are a helpful assistant for a food delivery service. I will give you A photo of a delivery note. Please extract and return a valid JSON with the following fields: - \`address\`: The full address, like a proper address including House or flat number, street address, town, postcode and country. remove any duplicates. - \`postcode\`: The postcode of the delivery location (if available). - \`country\`: Country name -currently United Kingdom. - \`verify_code\`: Verification code for the delivery (if available). - \`customer_phone\`: Phone number (if available). ⚠️ Only return the JSON object with these fields. No markdown, no comments. Example: { "address": "27 Kenton Gardens, St Albans, AL1 1JS, United Kingdom", "postcode": "AL1 1JS", "country": "United Kingdom", "verify_code": "", "customer_phone": "", } If the address is not found, return null for all fields.`;
+
+
+            if (model == "gemini") {
+                response = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API}`,
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: prompt, }, { inline_data: { mimeType, data: base64Data, }, },], },],
+                        }),
+                    },
+                );
+
+                if (!response.ok) {
+                    console.error("Gemini API Error:", await response.text());
+                    Alert.alert('Error', 'Failed to communicate with Gemini API.');
+                    return;
+                }
+                const data = await response.json();
+                rawJsonText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+            } else {
+
+                response = await fetch('https://api.openai.com/v1/chat/completions', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        Authorization: `Bearer ${OPENAI_API_KEY}`,
+                        'Content-Type': 'application/json',
+                    },
                     body: JSON.stringify({
-                        contents: [
+                        model: 'gpt-4o',
+                        messages: [
                             {
-                                parts: [
-                                    {
-                                        text: `You are a helpful assistant for a food delivery service. I will give you A photo of a delivery note.                                        
-                                        Please extract and return a valid JSON with the following fields:
-                                        - \`address\`: The full address, like a proper address including House or flat number, street address, town, postcode and country. remove any duplicates.
-                                        - \`postcode\`: The postcode of the delivery location (if available).
-                                        - \`country\`: Country name -currently United Kingdom.
-                                        - \`verify_code\`: Verification code for the delivery (if available).
-                                        - \`customer_phone\`: Phone number (if available).
-                                        ⚠️ Only return the JSON object with these fields. No markdown, no comments. 
-                                        Example: {
-                                          "address": "27 Kenton Gardens, St Albans, AL1 1JS, United Kingdom",
-                                          "postcode": "AL1 1JS",
-                                          "country": "United Kingdom",
-                                          "verify_code": "",
-                                          "customer_phone": "",
-                                        }
-                                        If the address is not found, return null for all fields.
-                                        `
-                                    },
-                                    {
-                                        inline_data: {
-                                            mime_type: mimeType,
-                                            data: base64Data,
-                                        },
-                                    },
+                                role: 'user',
+                                content: [
+                                    { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${base64Data}`, }, }, { type: 'text', text: prompt, },
                                 ],
                             },
                         ],
                     }),
-                },
-            );
+                });
 
-            if (!response.ok) {
-                console.error("Gemini API Error:", await response.text());
-                Alert.alert('Error', 'Failed to communicate with Gemini API.');
-                return;
+                if (!response.ok) {
+                    console.error("Gemini API Error:", await response.text());
+                    Alert.alert('Error', 'Failed to communicate with Gemini API.');
+                    return;
+                }
+
+                const data = await response.json();
+                rawJsonText = data?.choices?.[0]?.message?.content?.trim();
             }
 
-            const geminiResult = await response.json();
-            const rawJsonText = geminiResult?.candidates?.[0]?.content?.parts?.[0]?.text;
 
             if (!rawJsonText) {
                 Alert.alert('No Data', 'Gemini could not extract any data from the image. Please try again with a clearer photo.');
@@ -237,7 +249,8 @@ export default function TakePhoto() {
 
             const jsonString = rawJsonText.replace(/```json\n|```/g, '').trim();
             const deliveryData = JSON.parse(jsonString);
-            console.log("Gemini Response data from Take Photo -- ", jsonString);
+
+            console.log("API Response data from Take Photo -- ", jsonString);
 
             if (!deliveryData.address) {
                 Alert.alert('Incomplete Data', 'Address could not be extracted. Please try again.');

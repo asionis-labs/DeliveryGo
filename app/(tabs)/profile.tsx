@@ -155,51 +155,73 @@ export default function Profile() {
                         <InfoRow label="Email" value={profile.email} />
                         <LineBreak />
                         <InfoRow label="Phone" value={profile.phone} />
-                        <LineBreak />
-                        <InfoRow label="Role" value={profile.role} />
+                        {/* <LineBreak /> */}
+                        {/* <InfoRow label="Role" value={profile.role} /> */}
                         <LineBreak />
                         <InfoRow label="Address" value={`${profile.house_number} ${profile.street}`} />
                         <LineBreak />
-                        <InfoRow label="Town/Postcode" value={`${profile.town}, ${profile.postcode}`} />
+                        <InfoRow label="Addres" value={`${profile.town}, ${profile.postcode}`} />
                         <LineBreak />
                         <InfoRow label="Country" value={profile.country} />
+
+
+                        {profile.role === 'restaurant' && (
+                            <>
+                                <LineBreak />
+                                <InfoRow label="Hourly Rate" value={`£${profile.hourly_rate}`} />
+                                <LineBreak />
+                                <InfoRow label="Mileage Rate" value={`£${profile.mileage_rate}`} />
+                                <LineBreak />
+                                <InfoRow label="Local Rate" value={profile.local_rate ? `£${profile.local_rate}` : 'Not Set'} />
+                            </>
+                        )}
+
                     </View>
+
                 ) : (
                     <Text>Loading profile...</Text>
                 )}
 
-                {profile?.role === 'restaurant' && (
-                    <View style={profileStyles.card}>
-                        <UIText type="base" style={profileStyles.sectionHeading}>Subscription Status</UIText>
-                        <UIText
-                            type="base"
-                            style={[
-                                profileStyles.cardText,
-                                { color: subscriptionStatus.textColor, fontWeight: 'bold' }
-                            ]}
-                        >
-                            {subscriptionStatus.text}
-                        </UIText>
-                        <UIButton label="Manage Subscription" onPress={handleUpgrade} type="normal" style={profileStyles.upgradeButton} />
 
-                        <LineBreak height={20} />
 
-                        <UIText type="base" style={profileStyles.sectionHeading}>Support</UIText>
-                        <View style={profileStyles.supportRow}>
-                            <FontAwesome name="envelope" size={20} color={color.text} />
-                            <TouchableOpacity onPress={handleSupportEmail}>
-                                <UIText type="base" style={profileStyles.supportText}>support@deliverygo.co.uk</UIText>
-                            </TouchableOpacity>
-                        </View>
-                        <LineBreak height={5} />
-                        <View style={profileStyles.supportRow}>
-                            <FontAwesome name="phone" size={20} color={color.text} />
-                            <TouchableOpacity onPress={handleSupportCall}>
-                                <UIText type="base" style={profileStyles.supportText}>+44 7707 771599</UIText>
-                            </TouchableOpacity>
-                        </View>
+                <View style={profileStyles.card}>
+
+                    {profile?.role === 'restaurant' && (
+                        <>
+                            <UIText type="base" style={profileStyles.sectionHeading}>Subscription Status</UIText>
+                            <UIText
+                                type="base"
+                                style={[
+                                    profileStyles.cardText,
+                                    { color: subscriptionStatus.textColor, fontWeight: 'bold' }
+                                ]}
+                            >
+                                {subscriptionStatus.text}
+                            </UIText>
+                            <UIButton label="Manage Subscription" onPress={handleUpgrade} type="normal" style={profileStyles.upgradeButton} />
+
+                            <LineBreak height={20} />
+                        </>
+
+
+                    )}
+
+
+                    <UIText type="base" style={profileStyles.sectionHeading}>Support</UIText>
+                    <View style={profileStyles.supportRow}>
+                        <FontAwesome name="envelope" size={20} color={color.text} />
+                        <TouchableOpacity onPress={handleSupportEmail}>
+                            <UIText type="base" style={profileStyles.supportText}>support@deliverygo.co.uk</UIText>
+                        </TouchableOpacity>
                     </View>
-                )}
+                    <LineBreak height={5} />
+                    <View style={profileStyles.supportRow}>
+                        <FontAwesome name="phone" size={20} color={color.text} />
+                        <TouchableOpacity onPress={handleSupportCall}>
+                            <UIText type="base" style={profileStyles.supportText}>+44 7707 771599</UIText>
+                        </TouchableOpacity>
+                    </View>
+                </View>
 
 
 

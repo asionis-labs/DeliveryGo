@@ -65,7 +65,7 @@ export default function OnboardingScreen() {
         postcode: '',
         country: '',
         hourly_rate: "",
-        mileage_rate: 0.7,
+        mileage_rate: "",
         local_rate: ""
 
     });
@@ -82,8 +82,8 @@ export default function OnboardingScreen() {
                 postcode: profile.postcode || '',
                 country: profile.country || 'United Kingdom',
                 hourly_rate: profile.hourly_rate || 12.21,
-                mileage_rate: profile.mileage_rate || 0.7,
-                local_rate: profile.mileage_rate || 0.7
+                mileage_rate: profile.mileage_rate || 0.75,
+                local_rate: profile.local_rate || 0.70
             });
         }
     }, [profile]);
@@ -97,36 +97,64 @@ export default function OnboardingScreen() {
     };
 
     const submitProfile = async () => {
-        if (!form.name || !form.email) {
-            return Alert.alert('Error', 'Name and Email are required');
+        if (!form.name || !form.email || !form.street || !form.town || !form.postcode) {
+            return Alert.alert('Error', 'Please fill in all required fields (Name, Email, Address, City, Postcode).');
         }
+
+        const hourlyRate = parseFloat(form.hourly_rate);
+        const mileageRate = parseFloat(form.mileage_rate);
+        const localRate = parseFloat(form.local_rate);
+
+        if (form.role === 'restaurant') {
+            if (isNaN(hourlyRate) || hourlyRate <= 0) {
+                return Alert.alert('Error', 'Please enter a valid hourly rate (e.g., 12.50).');
+            }
+            if (isNaN(mileageRate) || mileageRate <= 0) {
+                return Alert.alert('Error', 'Please enter a valid mileage rate (e.g., 0.75).');
+            }
+            if (isNaN(localRate) || localRate <= 0) {
+                return Alert.alert('Error', 'Please enter a valid local delivery rate (e.g., 0.90).');
+            }
+        }
+
+
+
+        const postcodeRegex = /^[A-Z]{1,2}[0-9][A-Z0-9]?\s?[0-9][A-Z]{2}$/i;
+        if (!postcodeRegex.test(form.postcode)) {
+            return Alert.alert('Error', 'Please enter a valid postcode.');
+        }
+
+
+
         setLoading(true);
 
         try {
             let subscriptionEndDate: string | null = null;
             const userPhone = session?.user?.phone;
 
+            // Trial Chcecking
             if (userPhone) {
-                // Check if the user has a trial history
                 const { data: trialHistory, error: historyError } = await supabase
                     .from('user_trial_history')
                     .select('trial_start_date')
                     .eq('phone', userPhone)
                     .single();
-
                 if (historyError && historyError.code !== 'PGRST116') {
-                    // PGRST116 is the "no rows found" error, which is expected for new users.
                     throw historyError;
                 }
 
-                if (!trialHistory) {
-                    // User has no trial history, so give them a 10-day trial.
+                if (trialHistory && trialHistory.trial_start_date) {
+                    const trialStartDate = new Date(trialHistory.trial_start_date);
+                    const trialDurationDays = 10;
+                    const trialEndDate = new Date(trialStartDate);
+                    trialEndDate.setDate(trialStartDate.getDate() + trialDurationDays);
+                    subscriptionEndDate = trialEndDate.toISOString();
+                } else {
                     const trialDurationDays = 10;
                     const trialEndDate = new Date();
                     trialEndDate.setDate(trialEndDate.getDate() + trialDurationDays);
                     subscriptionEndDate = trialEndDate.toISOString();
 
-                    // Insert a record into the trial history table
                     const { error: insertError } = await supabase
                         .from('user_trial_history')
                         .insert({ phone: userPhone });
@@ -149,9 +177,9 @@ export default function OnboardingScreen() {
                 town: form.town,
                 postcode: form.postcode,
                 country: form.country,
-                hourly_rate: form.hourly_rate,
-                mileage_rate: form.mileage_rate,
-                local_rate: form.local_rate,
+                hourly_rate: form.hourly_rate || 12.21,
+                mileage_rate: form.mileage_rate || 0.75,
+                local_rate: form.local_rate || 0.70,
                 subscription_end: subscriptionEndDate,
             }).select().single();
 
@@ -171,12 +199,13 @@ export default function OnboardingScreen() {
                     restaurant_id: DEFAULT_RESTAURANT_ID,
                     hourly_rate: newProfile.hourly_rate,
                     mileage_rate: newProfile.mileage_rate,
+                    local_rate: newProfile.local_rate || 0.75,
                     invited_by: 'restaurant',
                     status: 'accepted',
                     driver_name: newProfile.name,
                     restaurant_name: 'Demo_Restaurant',
                     restaurant_postcode: form.postcode,
-                    subscription_end: subscriptionEndDate // **CORRECTED:** Pass the subscription date to the connection table.
+                    subscription_end: subscriptionEndDate
                 }).select().single();
 
                 if (connectionError) throw connectionError;
@@ -287,15 +316,23 @@ export default function OnboardingScreen() {
                     <LineBreak height={5} />
                     <UIInput placeholder="example@gmail.com" value={form.email} onChangeText={(v) => handleChange('email', v)} iconName="mail-bulk" keyboardType="email-address" />
 
-                    <UIText type='base'> Payment Per Hour </UIText>
-                    <LineBreak height={5} />
-                    <UIInput
-                        placeholder="£12.21"
-                        value={String(form.hourly_rate)}
-                        onChangeText={(v) => handleChange('hourly_rate', v)}
-                        iconName="pound-sign"
-                        keyboardType="numeric"
-                    />
+
+                    {form.role === 'restaurant' && (<View>
+
+                        <LineBreak height={5} />
+                        <UIText type='base'> Hourly Rate </UIText>
+
+                        <UIInput
+                            placeholder="12.21"
+                            value={String(form.hourly_rate)}
+                            onChangeText={(v) => handleChange('hourly_rate', v)}
+                            iconName="pound-sign"
+                            keyboardType="numeric"
+                        />
+
+                    </View>)}
+
+
 
                     {form.role === 'restaurant' && (
 
@@ -304,7 +341,7 @@ export default function OnboardingScreen() {
                             <UIText type='base'> Local delivery rate under 1 mile </UIText>
                             <LineBreak height={5} />
                             <UIInput
-                                placeholder="£0.9"
+                                placeholder="0.9"
                                 value={String(form.local_rate || '')}
                                 onChangeText={(v) => handleChange('local_rate', v)}
                                 iconName="money-bill-wave"
@@ -320,13 +357,19 @@ export default function OnboardingScreen() {
 
                     {form.role === 'restaurant' && (
                         <View>
-                            <UIText type='base'>Per Money Per Mileage </UIText>
+                            <UIText type='base'>Petrol money per mileage </UIText>
                             <UIText type='base' style={{ fontSize: 14, color: color.text_light }}>
-                                For example driving 4 miles: £{(form.mileage_rate * 2).toFixed(2)} and 8 miles: £{(form.mileage_rate * 4).toFixed(2)}
+
+                                For example driving one-way
+                                2 miles: £{(form.mileage_rate * 2).toFixed(2)},
+                                3 miles: £{(form.mileage_rate * 3).toFixed(2)},
+                                4 miles: £{(form.mileage_rate * 4).toFixed(2)},
+                                5 miles: £{(form.mileage_rate * 5).toFixed(2)}
+
                             </UIText>
                             <LineBreak height={5} />
                             <UIInput
-                                placeholder="£0.75"
+                                placeholder="0.75"
                                 value={String(form.mileage_rate)}
                                 onChangeText={(v) => handleChange('mileage_rate', v)}
                                 iconName="car"

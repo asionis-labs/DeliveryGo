@@ -20,17 +20,24 @@ export default function HomeScreen() {
     const { deliveries, setDeliveries, profile, connections, setConnections, shifts, setShifts } = dataStore();
     const activeConnection = connections.find(c => c.id === profile?.active_connection_id);
 
-    // FIX: Pass the sorted/filtered deliveries to the DataObject
+
+
+
     const sortedDeliveries = useMemo(() => {
-        if (!deliveries) return [];
+        if (!deliveries || !profile) return [];
 
-        const activeConnectionId = activeConnection?.id;
-        const filtered = deliveries.filter(delivery => delivery.connection_id === activeConnectionId);
-
-        return [...filtered].sort((a, b) => {
+        const filteredDeliveries = deliveries.filter(delivery => {
+            if (profile.role === 'restaurant') {
+                return delivery.restaurant_id === profile.id;
+            } else {
+                return delivery.connection_id === activeConnection?.id;
+            }
+        });
+        return [...filteredDeliveries].sort((a, b) => {
             return new Date(b.start_time).getTime() - new Date(a.start_time).getTime();
         });
-    }, [deliveries, activeConnection]);
+    }, [deliveries, activeConnection, profile]);
+
 
     // FIX: Update DataObject to use the sortedDeliveries list
     const DataObject = {
@@ -133,7 +140,11 @@ export default function HomeScreen() {
                 <FlatList
                     data={sortedDeliveries}
                     keyExtractor={(item) => item.id}
-                    renderItem={({ item }) => <DeliveryItem item={item} onRefresh={triggerRefresh} />}
+                    renderItem={({ item }) => {
+                        const driverConnection = connections.find(c => c.id === item.connection_id);
+                        const driverName = driverConnection?.driver_name || 'N/A';
+                        return <DeliveryItem item={{ ...item, driverName }} onRefresh={triggerRefresh} profile={profile} />; // ⭐ Pass the profile prop
+                    }}
                     ListHeaderComponent={() => <DeliveryHeader data={DataObject} onRefresh={triggerRefresh} />}
                     contentContainerStyle={{ paddingBottom: tabBarHeight + 20 }}
                     extraData={deliveries}

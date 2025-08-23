@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { View, StyleSheet, SafeAreaView, ScrollView, Alert, TextInput, ActivityIndicator, TouchableOpacity, RefreshControl, Platform } from 'react-native';
+import { Linking, View, StyleSheet, SafeAreaView, ScrollView, Alert, TextInput, ActivityIndicator, TouchableOpacity, RefreshControl, Platform } from 'react-native';
 import { UIText } from '@/components/UIText';
 import { UIButton } from '@/components/UIButton';
 import { useColors } from '@/hooks/useColors';
@@ -38,6 +38,8 @@ interface Connection {
   restaurant_postcode: string
   invited_by: 'driver' | 'restaurant';
   created_at: string;
+  local_rate: number;
+  subscription_end: string | null;
 }
 
 export default function ConnectionScreen() {
@@ -70,6 +72,9 @@ export default function ConnectionScreen() {
       .from('connections')
       .select(`*`)
       .or(`driver_id.eq.${profile.id},restaurant_id.eq.${profile.id}`);
+
+    console.log("Fetched connections", data);
+
 
     if (error) {
       Alert.alert("Error fetching connections", error.message);
@@ -122,7 +127,7 @@ export default function ConnectionScreen() {
 
     const { data: recipientProfile, error: recipientError } = await supabase
       .from('profiles')
-      .select('name, postcode')
+      .select('name, postcode, hourly_rate, mileage_rate, local_rate, subscription_end')
       .eq('id', recipientId)
       .single();
 
@@ -142,9 +147,21 @@ export default function ConnectionScreen() {
     const restaurant_postcode = profile.role === 'driver'
       ? recipientProfile.postcode : profile.postcode;
 
-    const { hourly_rate, mileage_rate, role } = profile;
+    const ratesToUse = profile.role === 'restaurant' ? {
+      hourly_rate: profile.hourly_rate,
+      mileage_rate: profile.mileage_rate,
+      local_rate: profile.local_rate,
+      subscription_end: profile.subscription_end
 
-    if (hourly_rate === null || mileage_rate === null) {
+    } : {
+      hourly_rate: recipientProfile.hourly_rate,
+      mileage_rate: recipientProfile.mileage_rate,
+      local_rate: recipientProfile.local_rate,
+      subscription_end: recipientProfile.subscription_end
+
+    };
+
+    if (ratesToUse.hourly_rate === null || ratesToUse.mileage_rate === null) {
       return Alert.alert("Error", "Your profile is missing hourly or mileage rate information. Please update your profile first.");
     }
 
@@ -155,9 +172,8 @@ export default function ConnectionScreen() {
         restaurant_id,
         driver_name,
         restaurant_name,
-        hourly_rate,
-        mileage_rate,
-        invited_by: role,
+        ...ratesToUse,
+        invited_by: profile.role,
         restaurant_postcode,
         status: 'pending',
       });
@@ -187,10 +203,6 @@ export default function ConnectionScreen() {
   const handleDeleteConnection = async (connId: string) => {
     const connectionToDelete = connections.find(c => c.id === connId);
 
-    if (connectionToDelete) {
-      Alert.alert("Sorry", "You can't Delete Connection Now for Security Purpose")
-      return null
-    }
 
     if (!connectionToDelete) {
       Alert.alert("Error", "Connection not found.");
@@ -258,9 +270,13 @@ export default function ConnectionScreen() {
   const openConnectionModal = async (connection: Connection) => {
     setModalLoading(true);
     setIsModalVisible(true);
-    setSelectedConnection(connection);
+
+
+    const fullConnection = connections.find(c => c.id === connection.id);
+    setSelectedConnection(fullConnection || connection);
 
     const connectedId = profile?.role === 'driver' ? connection.restaurant_id : connection.driver_id;
+
     const { data, error } = await supabase
       .from('profiles')
       .select(`
@@ -269,6 +285,9 @@ export default function ConnectionScreen() {
       `)
       .eq('id', connectedId)
       .single();
+
+    console.log("data", data);
+
 
     if (error) {
       Alert.alert("Error", `Failed to fetch profile: ${error.message}`);
@@ -285,7 +304,7 @@ export default function ConnectionScreen() {
     setConnectedProfile(null);
   }
 
-  const formatDateTime = (dateString: string) => {
+  const formatDateTime = (dateString: string | null | undefined) => {
     if (!dateString) return "N/A";
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
@@ -449,15 +468,28 @@ export default function ConnectionScreen() {
               <LineBreak />
               <View style={modalStyles.row}>
                 <UIText type="semiBold">Hourly Rate</UIText>
-                <UIText>£{selectedConnection.hourly_rate}</UIText>
+                <UIText>£{selectedConnection?.hourly_rate}</UIText>
               </View>
+
+              <View style={modalStyles.row}>
+                <UIText type="semiBold">Local Delivery Under 1 Mile</UIText>
+                <UIText>£{selectedConnection?.local_rate}</UIText>
+              </View>
+
+
               <View style={modalStyles.row}>
                 <UIText type="semiBold">Mileage Rate</UIText>
-                <UIText>£{selectedConnection.mileage_rate}/mile</UIText>
+                <UIText>£{selectedConnection?.mileage_rate}/mile</UIText>
               </View>
+
+              <View style={modalStyles.row}>
+                <UIText type="semiBold">Subscription Ends</UIText>
+                <UIText>{formatDateTime(selectedConnection?.subscription_end)}</UIText>
+              </View>
+
               <View style={modalStyles.row}>
                 <UIText type="semiBold">Connected Since</UIText>
-                <UIText>{formatDateTime(selectedConnection.created_at)}</UIText>
+                <UIText>{formatDateTime(selectedConnection?.created_at)}</UIText>
               </View>
               <LineBreak />
               <View style={modalStyles.row}>
@@ -466,7 +498,10 @@ export default function ConnectionScreen() {
               </View>
               <View style={modalStyles.row}>
                 <UIText type="semiBold">Phone</UIText>
-                <UIText>{connectedProfile.phone}</UIText>
+
+                <TouchableOpacity onPress={() => Linking.openURL(`tel:${connectedProfile.phone}`)}>
+                  <UIText style={{ color: color.btn }}>{connectedProfile.phone}</UIText>
+                </TouchableOpacity>
               </View>
               <LineBreak />
               <View style={modalStyles.row}>
