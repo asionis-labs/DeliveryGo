@@ -4,11 +4,6 @@
     "slug": "DeliveryGo",
     "version": "1.0.4",
     "extra": {
-      "supabaseUrl": "process.env.SUPABASEURL",
-      "supabaseAnonKey": "process.env.SUPABASEANONKEY",
-      "gemini_api": "process.env.GEMINI_API",
-      "google_api": "process.env.GOOGLE_API",
-      "openai_api": "process.env.OPENAIAPI",
       "router": {},
       "eas": {
         "projectId": "ef149e2c-40fa-44e4-b344-adf96bc7eeef"

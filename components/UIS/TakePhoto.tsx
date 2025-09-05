@@ -43,10 +43,13 @@ export default function TakePhoto() {
     const color = useColors();
     const [isProcessingImage, setIsProcessingImage] = useState<boolean>(false);
     const { profile, deliveries, connections, shifts, setDeliveries } = dataStore();
-    const GEMINI_API = Constants.expoConfig.extra.gemini_api;
-    const Google_API = Constants.expoConfig.extra.google_api;
-    const OPENAI_API_KEY = Constants.expoConfig.extra.openai_api;
+
+    const GEMINI_API = process.env.EXPO_PUBLIC_GEMINI_API;
+    const Google_API = process.env.EXPO_PUBLIC_GOOGLE_API;
+    const OPENAI_API_KEY = process.env.EXPO_PUBLIC_OPENAIAPI;
+
     const activeConnection = connections.find(c => c.id === profile?.active_connection_id);
+
 
 
     const isSubscriptionActive = useMemo(() => {
