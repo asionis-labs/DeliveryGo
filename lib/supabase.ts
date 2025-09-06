@@ -6,11 +6,10 @@ import 'react-native-url-polyfill/auto'
 import Constants from 'expo-constants'
 
 
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
+const { SUPABASE_URL, SUPABASE_ANON_KEY, } = Constants.expoConfig?.extra || {};
 
 // @ts-ignore
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: {
         ...(Platform.OS !== "web" ? { storage: AsyncStorage } : {}),
         autoRefreshToken: true,

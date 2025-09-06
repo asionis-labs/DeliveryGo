@@ -37,16 +37,13 @@ const getDistanceAndAddress = async (origin: string, destination: string, google
         console.error("Error calculating distance:", error);
     }
     return null;
-};
-
+}
 export default function TakePhoto() {
     const color = useColors();
     const [isProcessingImage, setIsProcessingImage] = useState<boolean>(false);
     const { profile, deliveries, connections, shifts, setDeliveries } = dataStore();
 
-    const GEMINI_API = process.env.EXPO_PUBLIC_GEMINI_API;
-    const Google_API = process.env.EXPO_PUBLIC_GOOGLE_API;
-    const OPENAI_API_KEY = process.env.EXPO_PUBLIC_OPENAIAPI;
+    const { GOOGLE_API, OPENAI_API_KEY, GEMINI_API } = Constants.expoConfig?.extra || {};
 
     const activeConnection = connections.find(c => c.id === profile?.active_connection_id);
 
@@ -89,7 +86,7 @@ export default function TakePhoto() {
         }
 
         const restaurantPostcode = activeConnection.restaurant_postcode;
-        const distanceAndAddress = await getDistanceAndAddress(restaurantPostcode, data.address, Google_API);
+        const distanceAndAddress = await getDistanceAndAddress(restaurantPostcode, data.address, GOOGLE_API);
 
         if (!distanceAndAddress) {
             Alert.alert("Error", "Could not calculate delivery distance. Please try again.");

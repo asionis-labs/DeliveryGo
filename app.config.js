@@ -1,0 +1,102 @@
+// app.config.js
+export default ({ config }) => ({
+     expo: {
+          name: "DeliveryGo",
+          slug: "DeliveryGo",
+          version: "1.0.5",
+          orientation: "portrait",
+          icon: "./assets/images/icon.png",
+          scheme: "deliverygo",
+          userInterfaceStyle: "light",
+          newArchEnabled: true,
+          ios: {
+               bundleIdentifier: "uk.co.deliverygo",
+               supportsTablet: true,
+               associatedDomains: [
+                    "applinks:deliverygo.co.uk",
+                    "applinks:deliverygo.co.uk"
+               ],
+               infoPlist: {
+                    NSCameraUsageDescription:
+                         "DeliveryGo uses the camera to capture proof-of-delivery photos (e.g., package at the door or receipt).",
+                    NSPhotoLibraryUsageDescription:
+                         "DeliveryGo lets you attach delivery-related photos from your library (e.g., receipts or package photos).",
+                    NSPhotoLibraryAddUsageDescription:
+                         "DeliveryGo can save your captured proof-of-delivery photos to your library if you choose to export them.",
+                    NSLocationWhenInUseUsageDescription:
+                         "DeliveryGo uses your location during active deliveries for routing and live driver tracking.",
+                    ITSAppUsesNonExemptEncryption: false,
+               },
+          },
+          android: {
+               package: "uk.co.deliverygo",
+               adaptiveIcon: {
+                    foregroundImage: "./assets/images/adaptive-icon.png",
+                    backgroundColor: "#ffffff",
+               },
+               permissions: [
+                    "android.permission.ACCESS_COARSE_LOCATION",
+                    "android.permission.ACCESS_FINE_LOCATION",
+                    "android.permission.CAMERA",
+                    "android.permission.READ_EXTERNAL_STORAGE",
+                    "android.permission.WRITE_EXTERNAL_STORAGE",
+                    "android.permission.INTERNET",
+                    "android.permission.POST_NOTIFICATIONS",
+                    "android.permission.RECORD_AUDIO",
+               ],
+               edgeToEdgeEnabled: true,
+               intentFilters: [
+                    {
+                         autoVerify: true,
+                         action: "VIEW",
+                         data: [
+                              {
+                                   scheme: "https",
+                                   host: "deliverygo.co.uk",
+                                   pathPrefix: "/",
+                              },
+                         ],
+                         category: ["BROWSABLE", "DEFAULT"],
+                    },
+               ],
+          },
+          web: {
+               bundler: "metro",
+               output: "static",
+               favicon: "./assets/images/favicon.png",
+          },
+          plugins: [
+               "expo-router",
+               [
+                    "expo-splash-screen",
+                    {
+                         image: "./assets/images/splash-icon.png",
+                         imageWidth: 200,
+                         resizeMode: "contain",
+                         backgroundColor: "#ffffff",
+                    },
+               ],
+               [
+                    "expo-image-picker",
+                    {
+                         photosPermission:
+                              "Allow DeliveryGo to access your photos to attach delivery proof (e.g., receipts or package photos).",
+                    },
+               ],
+          ],
+          experiments: {
+               typedRoutes: true,
+          },
+          extra: {
+               router: {},
+               eas: {
+                    projectId: "ef149e2c-40fa-44e4-b344-adf96bc7eeef",
+               },
+               GEMINI_API: process.env.EXPO_PUBLIC_GEMINI_API,
+               GOOGLE_API: process.env.EXPO_PUBLIC_GOOGLE_API,
+               OPENAI_API_KEY: process.env.EXPO_PUBLIC_OPENAIAPI,
+               SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL,
+               SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+          },
+     },
+});
